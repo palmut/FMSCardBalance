@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<resources>
+    <string name="app_title">СУП Баланс</string>
+    <string name="phone_label">Номер телефона</string>
+    <string name="card_number">4 последние цифры номера карты</string>
+    <string name="check_button">Проверить</string>
+    <string name="balance_amount">Доступно средств</string>
+    <string name="balance_error">Ошибка:</string>
+    <string name="error_connection">нет соединения</string>
+    <string name="error_other">проверьте данные карты</string>
+</resources>
