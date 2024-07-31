@@ -11,18 +11,23 @@ import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.logging.SIMPLE
 import io.ktor.client.request.accept
 import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.encodeURLPath
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-class BalanceRepository {
+class BalanceRepository(val preferences: Preferences = Preferences.INSTANCE) {
 
     private val client = HttpClient {
         engine {
@@ -36,100 +41,146 @@ class BalanceRepository {
             json()
         }
         install(HttpTimeout) {
-            socketTimeoutMillis = 10000
+            socketTimeoutMillis = 15000
+        }
+    }
+
+    val balance = MutableStateFlow(mutableListOf<CardModel>())
+
+    init {
+        val phone = preferences.getString("phone") ?: ""
+        val balanceListString = preferences.getString(phone) ?: "[]"
+        val balanceList = Json.decodeFromString<List<CardModel>>(balanceListString)
+
+        if (balanceList.isEmpty()) {
+            val tempBalanceList = listOf(
+                CardModel(
+                    title = "Спорт", availableAmount = "0", date = "Сегодня", tail = "0356"
+                ),
+                CardModel(
+                    title = "Еда", availableAmount = "0", date = "24.07.24", tail = "6665"
+                ),
+                CardModel(title = "Проезд", availableAmount = "0", date = "Вчера", tail = "7491")
+            )
+            val tempBalanceListString = Json.encodeToString(tempBalanceList)
+            preferences.putString(phone, tempBalanceListString)
+        }
+
+//        val list = getSavedBalance(phone)
+        balance.update {
+            balanceList.toMutableList()
         }
     }
 
     suspend fun getBalance(phone: String, pan: String): Response = withContext(Dispatchers.IO) {
         val url = "https://meal.gift-cards.ru/api/1/virtual-cards/$phone/$pan".encodeURLPath()
-        client.get(url).body<Response>()
+        val response = client.get(url).body<Response>()
+
+        response.data?.let { data ->
+            this@BalanceRepository.balance.value.let {
+                var cardModel = it.find { it.tail == data.maskedPan?.takeLast(4) }!!
+                cardModel = data.map(cardModel.title)
+
+                val savedBalance = preferences.getString(phone)?.let {
+                    Json.decodeFromString<List<CardModel>>(it).toMutableList()
+                } ?: mutableListOf()
+
+                savedBalance.forEachIndexed { index, item ->
+                    item.takeIf { it.tail == cardModel.tail}?.let {
+                        savedBalance[index] = it.copy(availableAmount = cardModel.availableAmount)
+                    }
+                }
+
+                preferences.putString(phone, Json.encodeToString(savedBalance))
+
+                this@BalanceRepository.balance.update { models ->
+                    savedBalance
+                }
+            }
+        }
+
+        response
+    }
+
+    suspend fun fetchBalance(phone: String, pan: String) {
+        getBalance(phone, pan)
+    }
+
+    fun saveCard() {
+
+    }
+
+    fun getSavedBalance(phone: String): List<CardModel> {
+        val balance = preferences.getString(phone)
+
+        return balance?.let {
+            Json.decodeFromString<List<CardModel>>(it)
+        } ?: emptyList()
     }
 
     @Serializable
     data class Response(
-        @SerialName("status")
-        val status: String? = null,
-        @SerialName("messages")
-        val messages: List<Message>? = null,
-        @SerialName("data")
-        val data: Data? = null
+        @SerialName("status") val status: String? = null,
+        @SerialName("messages") val messages: List<Message>? = null,
+        @SerialName("data") val data: Data? = null
     )
 
     @Serializable
     data class Message(
-        @SerialName("type")
-        val type: String? = null,
-        @SerialName("context")
-        val context: String? = null,
-        @SerialName("code")
-        val code: String? = null,
-        @SerialName("path")
-        val path: String? = null
+        @SerialName("type") val type: String? = null,
+        @SerialName("context") val context: String? = null,
+        @SerialName("code") val code: String? = null,
+        @SerialName("path") val path: String? = null
     )
 
     @Serializable
     data class Data(
-        @SerialName("status")
-        val status: String? = null,
-        @SerialName("maskedPan")
-        val maskedPan: String? = null,
-        @SerialName("activationDate")
-        val activationDate: String? = null,
-        @SerialName("orderId")
-        val orderId: String?,
-        @SerialName("validUntil")
-        val validUntil: String?,
-        @SerialName("goalCard")
-        val goalCard: Boolean? = null,
-        @SerialName("activationCode")
-        val activationCode: String? = null,
-        @SerialName("expireDate")
-        val expireDate: String? = null,
-        @SerialName("authLimitId")
-        val authLimitId: String? = null,
-        @SerialName("customDomainPart")
-        val customDomainPart: String? = null,
-        @SerialName("paymentDate")
-        val paymentDate: String? = null,
-        @SerialName("smsNotificationAvailable")
-        val smsNotificationAvailable: Boolean? = null,
-        @SerialName("balance")
-        val balance: Balance? = null,
-        @SerialName("history")
-        val history: List<HistoryItem>? = null,
-        @SerialName("phone")
-        val phone: String? = null,
-        @SerialName("cardType")
-        val cardType: String? = null,
-        @SerialName("smsInfoStatus")
-        val smsInfoStatus: String?
+        @SerialName("status") val status: String? = null,
+        @SerialName("maskedPan") val maskedPan: String? = null,
+        @SerialName("activationDate") val activationDate: String? = null,
+        @SerialName("orderId") val orderId: String? = null,
+        @SerialName("validUntil") val validUntil: String?,
+        @SerialName("goalCard") val goalCard: Boolean? = null,
+        @SerialName("activationCode") val activationCode: String? = null,
+        @SerialName("expireDate") val expireDate: String? = null,
+        @SerialName("authLimitId") val authLimitId: String? = null,
+        @SerialName("customDomainPart") val customDomainPart: String? = null,
+        @SerialName("paymentDate") val paymentDate: String? = null,
+        @SerialName("smsNotificationAvailable") val smsNotificationAvailable: Boolean? = null,
+        @SerialName("balance") val balance: Balance? = null,
+        @SerialName("history") val history: List<HistoryItem>? = null,
+        @SerialName("phone") val phone: String? = null,
+        @SerialName("cardType") val cardType: String? = null,
+        @SerialName("smsInfoStatus") val smsInfoStatus: String? = null
     )
 
     @Serializable
     data class Balance(
-        @SerialName("availableAmount")
-        val availableAmount: Double? = null
+        @SerialName("availableAmount") val availableAmount: Double? = null
     )
 
     @Serializable
     data class HistoryItem(
-        @SerialName("time")
-        val time: String? = null,
-        @SerialName("amount")
-        val amount: Double? = null,
-        @SerialName("locationName")
-        val locationName: List<String>? = null,
-        @SerialName("trnType")
-        val trnType: Int? = null,
-        @SerialName("mcc")
-        val mcc: String? = null,
-        @SerialName("currency")
-        val currency: String? = null,
-        @SerialName("merchantId")
-        val merchantId: String? = null,
-        @SerialName("reversal")
-        val reversal: Boolean? = null,
-        @SerialName("posRechargeReceipt")
-        val posRechargeReceipt: String? = null
+        @SerialName("time") val time: String? = null,
+        @SerialName("amount") val amount: Double? = null,
+        @SerialName("locationName") val locationName: List<String>? = null,
+        @SerialName("trnType") val trnType: Int? = null,
+        @SerialName("mcc") val mcc: String? = null,
+        @SerialName("currency") val currency: String? = null,
+        @SerialName("merchantId") val merchantId: String? = null,
+        @SerialName("reversal") val reversal: Boolean? = null,
+        @SerialName("posRechargeReceipt") val posRechargeReceipt: String? = null
     )
 }
+
+@Serializable
+data class CardModel(
+    val title: String, val availableAmount: String, val date: String, val tail: String = "****"
+)
+
+fun BalanceRepository.Data.map(title: String) = CardModel(
+    title = title,
+    availableAmount = balance?.availableAmount?.toString() ?: "",
+    date = validUntil ?: "",
+    tail = maskedPan?.takeLast(4) ?: ""
+)
