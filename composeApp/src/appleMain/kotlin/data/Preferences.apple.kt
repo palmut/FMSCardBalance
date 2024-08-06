@@ -8,7 +8,7 @@ actual class Preferences {
     }
 
     actual fun getString(key: String): String? {
-        return NSUserDefaults.standardUserDefaults.stringForKey(key)
+        return NSTUserDefaults.standardUserDefaults.stringForKey(key)
     }
 
     actual companion object {

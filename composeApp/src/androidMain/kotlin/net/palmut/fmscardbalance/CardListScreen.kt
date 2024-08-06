@@ -2,14 +2,21 @@
 
 package net.palmut.fmscardbalance
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.DraggableState
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
@@ -28,20 +35,15 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.Card
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
@@ -54,18 +56,19 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.PointerInputChange
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -74,156 +77,221 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import data.BalanceRepository
 import data.CardModel
+import data.DefaultBalanceRepository
 import data.Preferences
+import data.PreviewBalanceRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.InternalResourceApi
 import ui.AppTheme
 
 private const val CARD_ASPECT_RATIO = 1.58f
-private const val CARD_WIDTH = 0.8f
+const val CARD_WIDTH = 0.8f
+private val BLURED = 12.dp
+private val UNBLURED = 0.dp
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun CardListScreen(repository: BalanceRepository = BalanceRepository()) {
+fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
 
     val state by repository.balance.collectAsState()
 
     val scope = rememberCoroutineScope()
-    val focusManager = LocalFocusManager.current
-    val keyboardController = LocalSoftwareKeyboardController.current
+    val haptic = LocalHapticFeedback.current
+    var editing by remember { mutableStateOf(false) }
+    var cardTitle by remember { mutableStateOf("") }
+    var cardPan by remember { mutableStateOf("") }
+
     val preferences = Preferences.INSTANCE
-    var phone by remember { mutableStateOf(preferences.getString("phone") ?: "") }
+    val phone = remember { mutableStateOf(preferences.getString("phone") ?: "") }
 
-//    val balance = repository.getSavedBalance(phone)
+    val blurTarget = remember { mutableStateOf(UNBLURED) }
+    val blur = animateDpAsState(targetValue = blurTarget.value, label = "blur")
 
-    val cardIndex = remember { mutableIntStateOf(0) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFFFFFF9)),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        BasicTextField(
-            modifier = Modifier
-                .systemBarsPadding()
-                .height(64.dp)
-                .fillMaxWidth(CARD_WIDTH)
-                .padding(bottom = 16.dp)
-                .zIndex(-5f)
-                .border(
-                    border = BorderStroke(2.dp, Color.Black),
-                    shape = RoundedCornerShape(16.dp)
-                ),
-            singleLine = true,
-            textStyle = TextStyle(
-                color = Color(0xFF138DFF),
-                fontSize = 25.sp,
-                textAlign = TextAlign.Center
-            ),
-            value = phone,
-            onValueChange = {
-                phone = it
-                preferences.putString("phone", it)
-            },
-            keyboardActions = KeyboardActions(onDone = {
-                keyboardController?.hide()
-                focusManager.clearFocus()
-            }),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Phone,
-                autoCorrect = false
-            ),
-            cursorBrush = SolidColor(Color(0xFF138DFF)),
-            decorationBox = { innerTextField ->
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-//                    Text(text = "+7 999 111-22-33".lowercase(), fontSize = 25.sp, color = Color(0xFF138DFF))
-                    innerTextField()
-                }
-            }
+    val newModel = remember {
+        mutableStateOf(
+            CardModel(
+                title = "",
+                availableAmount = "0",
+                tail = ""
+            )
         )
+    }
 
-        Box(modifier = Modifier) {
-            val shape = MaterialTheme.shapes.small.copy(CornerSize(10.dp))
+    var focusedCardZIndex by remember { mutableFloatStateOf(0f) }
 
-            repeat(state.size) {
-                AnimatedCard(
-                    state = cardIndex,
-                    order = 1,
-                    upperOffset = 0.dp,
-                    lowerOffset = 0.dp,
-                    upperScale = 1f,
-                    lowerScale = 1f,
-                ) { border, offsetY, zIndex, scale, draggableState, onDragStopped ->
-                    Card(
-                        border = BorderStroke(border.value, Color.Black),
-                        modifier = Modifier
-                            .fillMaxWidth(CARD_WIDTH)
-                            .aspectRatio(CARD_ASPECT_RATIO)
-                            .scale(scale.value)
-                            .offset(y = offsetY.value)
-                            .zIndex(zIndex.value)
-                            .draggable(
-                                onDragStopped = onDragStopped,
-                                state = draggableState,
-                                orientation = Orientation.Vertical
-                            ),
-                        shape = MaterialTheme.shapes.small.copy(CornerSize(10.dp))
-                    ) {
-                        val loading = remember { mutableStateOf(false) }
-                        Box(contentAlignment = Alignment.Center) {
-                            CardContent(state[it], refreshEnabled = loading) {
-                                scope.launch {
-                                    loading.value = true
-                                    try {
-                                        repository.getBalance(phone, it)
-                                    } catch (e: Exception) {
+    Box {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFFFFFFF9))
+                .blur(blur.value),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            InputField(
+                modifier = Modifier.systemBarsPadding(),
+                type = InputFieldType.PHONE,
+                state = phone.value
+            ) {
+                phone.value = it
+                preferences.putString("phone", it)
+            }
 
-                                    } finally {
-                                        loading.value = false
+            Box(modifier = Modifier) {
+                val shape = MaterialTheme.shapes.small.copy(CornerSize(10.dp))
+
+                repeat(state.size) {
+                    AnimatedCard { border, offsetY, zIndex, scale, draggableState, onDragStopped ->
+                        Card(
+                            border = BorderStroke(border.value, Color.Black),
+                            modifier = Modifier
+                                .fillMaxWidth(CARD_WIDTH)
+                                .aspectRatio(CARD_ASPECT_RATIO)
+                                .scale(scale.value)
+                                .offset(y = offsetY.value)
+                                .zIndex(zIndex.value)
+                                .draggable(
+                                    onDragStopped = onDragStopped,
+                                    state = draggableState,
+                                    orientation = Orientation.Vertical
+                                )
+                                .pointerInput(Unit) {
+                                    detectTapGestures(
+                                        onLongPress = {
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        }
+                                    )
+                                },
+                            shape = MaterialTheme.shapes.small.copy(CornerSize(10.dp))
+                        ) {
+                            val loading = remember { mutableStateOf(false) }
+                            Box(contentAlignment = Alignment.Center) {
+                                CardContent(state[it], refreshEnabled = loading) {
+                                    scope.launch {
+                                        loading.value = true
+                                        try {
+                                            repository.getBalance(phone.value, it)
+                                        } catch (e: Exception) {
+
+                                        } finally {
+                                            loading.value = false
+                                        }
                                     }
                                 }
-                            }
-                            if (loading.value) {
-                                CircularProgressIndicator(strokeCap = StrokeCap.Round, color = Color(0xFF138DFF))
+                                if (loading.value) {
+                                    CircularProgressIndicator(
+                                        strokeCap = StrokeCap.Round,
+                                        color = MaterialTheme.colorScheme.tertiary
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
-        }
 
-        TextButton(
-            enabled = false,
+            TextButton(
+                modifier = Modifier
+                    .navigationBarsPadding()
+                    .height(64.dp)
+                    .fillMaxWidth(CARD_WIDTH)
+                    .padding(bottom = 16.dp)
+                    .zIndex(-5f),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.textButtonColors(containerColor = Color(0xFF138DFF)),
+                border = BorderStroke(2.dp, Color.Black),
+                onClick = {
+                    editing = true
+                    blurTarget.value = BLURED
+                }
+            ) {
+                Text(text = "Добавить карту".lowercase(), fontSize = 25.sp, color = Color.White)
+            }
+        }
+        AnimatedVisibility(
             modifier = Modifier
-                .navigationBarsPadding()
-                .height(64.dp)
-                .fillMaxWidth(CARD_WIDTH)
-                .padding(bottom = 16.dp)
-                .zIndex(-5f),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.textButtonColors(backgroundColor = Color(0xFF138DFF)),
-            border = BorderStroke(2.dp, Color.Black),
-            onClick = { /*TODO*/ })
-        {
-            Text(text = "Добавить карту".lowercase(), fontSize = 25.sp, color = Color.White)
+                .align(Alignment.Center),
+            visible = editing,
+            enter = slideInVertically() + fadeIn(),
+            exit = slideOutVertically() + fadeOut()
+        ) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.Center)
+            ) {
+                Card(
+                    border = BorderStroke(3.dp, Color.Black),
+                    modifier = Modifier
+                        .fillMaxWidth(CARD_WIDTH)
+                        .aspectRatio(CARD_ASPECT_RATIO),
+                    shape = MaterialTheme.shapes.small.copy(CornerSize(10.dp))
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Column {
+                            Text(text = "Название карты".lowercase())
+                            InputField(state = cardTitle, type = InputFieldType.TEXT) {
+                                cardTitle = it
+                                newModel.value = newModel.value.copy(title = it)
+                            }
+                        }
+                        Column {
+                            Text(text = "4 цифры карты".lowercase())
+                            InputField(state = cardPan, type = InputFieldType.NUMBER) {
+                                cardPan = it
+                                newModel.value = newModel.value.copy(tail = it)
+                            }
+                        }
+                    }
+                }
+
+                TextButton(
+                    modifier = Modifier
+                        .height(64.dp)
+                        .padding(top = 16.dp)
+                        .fillMaxWidth(CARD_WIDTH)
+                        .zIndex(-5f),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.textButtonColors(containerColor = Color(0xFF138DFF)),
+                    border = BorderStroke(2.dp, Color.Black),
+                    onClick = {
+                        if (newModel.value.title.isNotEmpty() && newModel.value.tail.length == 4) {
+                            repository.addCard(newModel.value)
+                            editing = false
+                            blurTarget.value = UNBLURED
+                        }
+                    }
+                ) {
+                    Text(text = "Добавить".lowercase(), fontSize = 25.sp, color = Color.White)
+                }
+
+                TextButton(
+                    modifier = Modifier
+                        .height(64.dp)
+                        .padding(top = 16.dp)
+                        .fillMaxWidth(CARD_WIDTH)
+                        .zIndex(-5f),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.textButtonColors(containerColor = Color(0xFF138DFF)),
+                    border = BorderStroke(2.dp, Color.Black),
+                    onClick = {
+                        editing = false
+                        blurTarget.value = UNBLURED
+                    }
+                ) {
+                    Text(text = "Отмена".lowercase(), fontSize = 25.sp, color = Color.White)
+                }
+            }
         }
     }
 }
 
 @Composable
 fun AnimatedCard(
-    state: MutableIntState,
-    order: Int,
-    upperOffset: Dp,
-    lowerOffset: Dp,
-    upperScale: Float,
-    lowerScale: Float,
     block: @Composable (
         border: State<Dp>,
         offsetY: State<Dp>,
@@ -235,15 +303,15 @@ fun AnimatedCard(
 ) {
     val density = LocalDensity.current
 
-    var newOrder: Int = order
+    var newOrder: Int = 0
 
-    val zIndex = remember { mutableFloatStateOf(newOrder.toFloat()) }
-    val scaleTarget = remember { mutableFloatStateOf(upperScale) }
-    val offsetYTarget = remember { mutableStateOf(upperOffset) }
+    val zIndex = remember { mutableFloatStateOf(0f) }
+    val scaleTarget = remember { mutableFloatStateOf(1f) }
+    val offsetYTarget = remember { mutableStateOf(0.dp) }
     val borderTarget = remember { mutableStateOf(3.dp) }
 
     val scale = animateFloatAsState(targetValue = scaleTarget.value, label = "scale") {
-        if (it == lowerScale) {
+        if (it == 1f) {
             newOrder -= 1
         }
     }
@@ -256,17 +324,9 @@ fun AnimatedCard(
 
     val offsetY = animateDpAsState(targetValue = offsetYTarget.value, label = "offsetY") {
         if (it == (-150).dp) {
-//            borderTarget.value = 1.dp
             zIndex.value -= 1.1f
-//            scaleTarget.value = 0.97f
             offsetYTarget.value = 0.dp
 
-        }
-
-        if (it == lowerOffset) {
-//            borderTarget.value += 1.dp
-//            scaleTarget.value += 0.02f
-//            offsetYTarget.value += 10.dp
         }
     }
 
@@ -283,17 +343,15 @@ fun AnimatedCard(
         }
     }
 
-    LaunchedEffect(state) {
-        println("moved")
-//        scaleTarget.value += 0.02f
-//        offsetYTarget.value += 10.dp
-    }
-
     block(border, offsetY, zIndex, scale, draggableState, onDragStopped)
 }
 
 @Composable
-fun CardContent(model: CardModel, refreshEnabled: MutableState<Boolean>,  refresh: (String) -> Unit) {
+fun CardContent(
+    model: CardModel,
+    refreshEnabled: MutableState<Boolean>,
+    refresh: (String) -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -357,22 +415,13 @@ fun CardContent(model: CardModel, refreshEnabled: MutableState<Boolean>,  refres
                     fontSize = 40.sp,
                     fontWeight = FontWeight.ExtraLight
                 )
-                /*Text(
-                    text = "обновлено ${model.date}",
+                Text(
+                    text = "Добавлено\n${model.date}",
                     fontSize = 15.6.sp,
                     textAlign = TextAlign.End
-                )*/
+                )
             }
         }
-    }
-}
-
-
-@Preview
-@Composable
-fun CardContentPreview() {
-    AppTheme {
-        CardContent(CardModel(title = "Спорт", availableAmount = "1000", date = "Сегодня"), refreshEnabled = mutableStateOf(false)) {}
     }
 }
 
@@ -380,6 +429,6 @@ fun CardContentPreview() {
 @Composable
 fun CardListScreenPreview() {
     AppTheme {
-        CardListScreen()
+        CardListScreen(repository = PreviewBalanceRepository())
     }
 }

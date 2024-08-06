@@ -7,11 +7,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.material.MaterialTheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
 import data.Preferences
+import ui.AppTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -23,15 +24,17 @@ class MainActivity : ComponentActivity() {
             enableEdgeToEdge(
                 statusBarStyle = SystemBarStyle.light(
                     Color.TRANSPARENT,
-                    MaterialTheme.colors.primary.toArgb()
+                    MaterialTheme.colorScheme.primary.toArgb()
                 ),
                 navigationBarStyle = SystemBarStyle.light(
                     Color.TRANSPARENT,
-                    MaterialTheme.colors.primary.toArgb()
+                    MaterialTheme.colorScheme.primary.toArgb()
                 )
             )
 //            App()
-            CardListScreen()
+            AppTheme {
+                CardListScreen()
+            }
         }
     }
 }

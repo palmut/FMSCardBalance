@@ -11,11 +11,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import data.BalanceRepository
+import data.DefaultBalanceRepository
 import data.Preferences
 import fmscardbalance.composeapp.generated.resources.Res
 import fmscardbalance.composeapp.generated.resources.app_title
@@ -57,7 +58,7 @@ fun App() {
 
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colors.background
+            color = MaterialTheme.colorScheme.background
         ) {
             Column(
                 modifier = Modifier
@@ -67,10 +68,10 @@ fun App() {
                 Text(
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                     text = stringResource(Res.string.app_title),
-                    style = MaterialTheme.typography.h4.copy(
+                    style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold
                     ),
-                    color = MaterialTheme.colors.secondary
+                    color = MaterialTheme.colorScheme.secondary
                 )
                 Spacer(modifier = Modifier.size(8.dp))
 
@@ -80,7 +81,7 @@ fun App() {
                     label = {
                         Text(
                             text = stringResource(Res.string.phone_label),
-                            style = MaterialTheme.typography.caption
+                            style = MaterialTheme.typography.labelMedium
                         )
                     },
                     value = phone.value,
@@ -96,7 +97,7 @@ fun App() {
                     label = {
                         Text(
                             text = stringResource(Res.string.card_number),
-                            style = MaterialTheme.typography.caption
+                            style = MaterialTheme.typography.labelMedium
                         )
                     },
                     value = card.value,
@@ -118,7 +119,7 @@ fun App() {
                             keyboardController?.hide()
                             try {
                                 loading.value = true
-                                val repository = BalanceRepository()
+                                val repository = DefaultBalanceRepository()
                                 balance.value = repository.getBalance(phone.value, card.value)
                             } catch (e: Exception) {
                                 balance.value = BalanceRepository.Response(
@@ -133,7 +134,7 @@ fun App() {
                     Text(
                         modifier = Modifier.padding(8.dp),
                         text = stringResource(Res.string.check_button),
-                        style = MaterialTheme.typography.button.copy(
+                        style = MaterialTheme.typography.labelMedium.copy(
                             fontWeight = FontWeight.Bold
                         )
                     )
@@ -144,23 +145,23 @@ fun App() {
                             Row(
                                 modifier = Modifier
                                     .background(
-                                        color = MaterialTheme.colors.surface
+                                        color = MaterialTheme.colorScheme.surface
                                     )
                             ) {
                                 Text(
                                     modifier = Modifier
                                         .padding(8.dp)
                                         .weight(1f),
-                                    style = MaterialTheme.typography.h5,
+                                    style = MaterialTheme.typography.headlineMedium,
                                     text = stringResource(Res.string.balance_amount),
-                                    color = MaterialTheme.colors.primary
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
                                     modifier = Modifier
                                         .padding(8.dp),
-                                    style = MaterialTheme.typography.h5,
+                                    style = MaterialTheme.typography.headlineMedium,
                                     text = balance.value.data?.balance?.availableAmount.toString(),
-                                    color = MaterialTheme.colors.primary
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
@@ -173,14 +174,14 @@ fun App() {
                                             .align(Alignment.CenterVertically)
                                             .padding(8.dp)
                                             .weight(1f),
-                                        style = MaterialTheme.typography.body1,
+                                        style = MaterialTheme.typography.bodyMedium,
                                         text = item.locationName?.firstOrNull() ?: ""
                                     )
                                     Text(
                                         modifier = Modifier
                                             .align(Alignment.CenterVertically)
                                             .padding(start = 8.dp),
-                                        style = MaterialTheme.typography.body2,
+                                        style = MaterialTheme.typography.bodyMedium,
                                         text = item.amount.toString(),
                                         color = if ((item.amount ?: 0.0) > 0.0) {
                                             Color.Green
@@ -192,7 +193,7 @@ fun App() {
                                         modifier = Modifier
                                             .align(Alignment.CenterVertically)
                                             .padding(8.dp),
-                                        style = MaterialTheme.typography.body2,
+                                        style = MaterialTheme.typography.bodyMedium,
                                         text = item.currency.toString()
                                     )
                                 }
@@ -206,7 +207,7 @@ fun App() {
                         Text(
                             modifier = Modifier
                                 .padding(8.dp),
-                            style = MaterialTheme.typography.subtitle1,
+                            style = MaterialTheme.typography.bodySmall,
                             text = stringResource(Res.string.balance_error),
                             color = Color.Red
                         )
@@ -214,7 +215,7 @@ fun App() {
                             modifier = Modifier
                                 .padding(8.dp)
                                 .weight(1f),
-                            style = MaterialTheme.typography.subtitle1,
+                            style = MaterialTheme.typography.titleMedium,
                             text = balance.value.status.errorToString(),
                             color = Color.Red
                         )

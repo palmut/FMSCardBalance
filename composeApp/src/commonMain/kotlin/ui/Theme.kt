@@ -1,7 +1,6 @@
 package ui
 
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material.MaterialTheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
@@ -10,11 +9,13 @@ fun AppTheme(
     content: @Composable() () -> Unit
 ) {
     MaterialTheme(
-        colors = MaterialTheme.colors.copy(
-            primary = Color(0xFF1485D1),
-            secondary = Color(0xFF999999)
+        colorScheme = MaterialTheme.colorScheme.copy(
+            primary = Color(0xFF74AD8F),
+            secondary = Color(0xFFDCDAB5),
+            tertiary = Color(0xFF1E3848),
+            background = Color(0xFFDCDAB5),
+            surface = Color(0xFFDCDAB5),
         ),
         content = content
     )
 }
-
