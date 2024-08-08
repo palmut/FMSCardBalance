@@ -63,9 +63,8 @@ fun InputField(
 
     BasicTextField(
         modifier = modifier
-            .height(64.dp)
+            .height(48.dp)
             .fillMaxWidth(CARD_WIDTH)
-            .padding(bottom = 16.dp)
             .background(
                 color = Color(0xFFFFFFF9),
                 shape = RoundedCornerShape(16.dp)

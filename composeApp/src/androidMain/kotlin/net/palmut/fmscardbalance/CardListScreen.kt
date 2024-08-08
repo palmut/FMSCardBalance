@@ -15,7 +15,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.DraggableState
 import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -35,7 +34,6 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -49,21 +47,17 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -87,8 +81,8 @@ import ui.AppTheme
 
 private const val CARD_ASPECT_RATIO = 1.58f
 const val CARD_WIDTH = 0.8f
-private val BLURED = 12.dp
-private val UNBLURED = 0.dp
+private val SEMITRANSPARENT = 0.9f
+private val NOT_TRANSPARENT = 0f
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -105,8 +99,8 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
     val preferences = Preferences.INSTANCE
     val phone = remember { mutableStateOf(preferences.getString("phone") ?: "") }
 
-    val blurTarget = remember { mutableStateOf(UNBLURED) }
-    val blur = animateDpAsState(targetValue = blurTarget.value, label = "blur")
+    val alphaTarget = remember { mutableFloatStateOf(NOT_TRANSPARENT) }
+    val alpha = animateFloatAsState(targetValue = alphaTarget.floatValue, label = "alpha")
 
     val newModel = remember {
         mutableStateOf(
@@ -124,13 +118,12 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFFFFFF9))
-                .blur(blur.value),
+                .background(Color(0xFFFFFFF9)),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             InputField(
-                modifier = Modifier.systemBarsPadding(),
+                modifier = Modifier.systemBarsPadding().padding(top = 16.dp),
                 type = InputFieldType.PHONE,
                 state = phone.value
             ) {
@@ -194,21 +187,26 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
             TextButton(
                 modifier = Modifier
                     .navigationBarsPadding()
-                    .height(64.dp)
-                    .fillMaxWidth(CARD_WIDTH)
                     .padding(bottom = 16.dp)
+                    .height(48.dp)
+                    .fillMaxWidth(CARD_WIDTH)
                     .zIndex(-5f),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.textButtonColors(containerColor = Color(0xFF138DFF)),
                 border = BorderStroke(2.dp, Color.Black),
                 onClick = {
                     editing = true
-                    blurTarget.value = BLURED
+                    alphaTarget.floatValue = SEMITRANSPARENT
                 }
             ) {
                 Text(text = "Добавить карту".lowercase(), fontSize = 25.sp, color = Color.White)
             }
         }
+
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = alpha.value)))
+
         AnimatedVisibility(
             modifier = Modifier
                 .align(Alignment.Center),
@@ -224,6 +222,7 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
                     border = BorderStroke(3.dp, Color.Black),
                     modifier = Modifier
                         .fillMaxWidth(CARD_WIDTH)
+                        .padding(bottom = 16.dp)
                         .aspectRatio(CARD_ASPECT_RATIO),
                     shape = MaterialTheme.shapes.small.copy(CornerSize(10.dp))
                 ) {
@@ -251,8 +250,8 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
 
                 TextButton(
                     modifier = Modifier
-                        .height(64.dp)
-                        .padding(top = 16.dp)
+                        .padding(bottom = 16.dp)
+                        .height(48.dp)
                         .fillMaxWidth(CARD_WIDTH)
                         .zIndex(-5f),
                     shape = RoundedCornerShape(16.dp),
@@ -262,7 +261,7 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
                         if (newModel.value.title.isNotEmpty() && newModel.value.tail.length == 4) {
                             repository.addCard(newModel.value)
                             editing = false
-                            blurTarget.value = UNBLURED
+                            alphaTarget.floatValue = NOT_TRANSPARENT
                         }
                     }
                 ) {
@@ -271,8 +270,7 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
 
                 TextButton(
                     modifier = Modifier
-                        .height(64.dp)
-                        .padding(top = 16.dp)
+                        .height(48.dp)
                         .fillMaxWidth(CARD_WIDTH)
                         .zIndex(-5f),
                     shape = RoundedCornerShape(16.dp),
@@ -280,7 +278,7 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
                     border = BorderStroke(2.dp, Color.Black),
                     onClick = {
                         editing = false
-                        blurTarget.value = UNBLURED
+                        alphaTarget.floatValue = NOT_TRANSPARENT
                     }
                 ) {
                     Text(text = "Отмена".lowercase(), fontSize = 25.sp, color = Color.White)
