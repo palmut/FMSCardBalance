@@ -15,9 +15,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.DraggableState
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,12 +39,16 @@ import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CardElevation
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
@@ -54,13 +61,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -75,16 +85,17 @@ import data.DefaultBalanceRepository
 import data.Preferences
 import data.PreviewBalanceRepository
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.InternalResourceApi
 import ui.AppTheme
 
 private const val CARD_ASPECT_RATIO = 1.58f
 const val CARD_WIDTH = 0.8f
-private val SEMITRANSPARENT = 0.9f
-private val NOT_TRANSPARENT = 0f
+private const val SEMITRANSPARENT = 0.9f
+private const val NOT_TRANSPARENT = 0f
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
 
@@ -101,6 +112,9 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
 
     val alphaTarget = remember { mutableFloatStateOf(NOT_TRANSPARENT) }
     val alpha = animateFloatAsState(targetValue = alphaTarget.floatValue, label = "alpha")
+
+    val elevationTarget = remember { mutableStateOf(0.dp) }
+    val elevation = animateDpAsState(targetValue = elevationTarget.value, label = "elevation")
 
     val newModel = remember {
         mutableStateOf(
@@ -123,7 +137,9 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             InputField(
-                modifier = Modifier.systemBarsPadding().padding(top = 16.dp),
+                modifier = Modifier
+                    .systemBarsPadding()
+                    .padding(top = 16.dp),
                 type = InputFieldType.PHONE,
                 state = phone.value
             ) {
@@ -136,13 +152,16 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
 
                 repeat(state.size) {
                     AnimatedCard { border, offsetY, zIndex, scale, draggableState, onDragStopped ->
+                        var removeAction = remember { mutableStateOf(false) }
                         Card(
+                            colors = CardDefaults.cardColors(),
                             border = BorderStroke(border.value, Color.Black),
                             modifier = Modifier
                                 .fillMaxWidth(CARD_WIDTH)
                                 .aspectRatio(CARD_ASPECT_RATIO)
                                 .scale(scale.value)
                                 .offset(y = offsetY.value)
+                                .shadow(elevation = elevation.value)
                                 .zIndex(zIndex.value)
                                 .draggable(
                                     onDragStopped = onDragStopped,
@@ -153,13 +172,14 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
                                     detectTapGestures(
                                         onLongPress = {
                                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            removeAction.value = removeAction.value.not()
                                         }
                                     )
                                 },
                             shape = MaterialTheme.shapes.small.copy(CornerSize(10.dp))
                         ) {
                             val loading = remember { mutableStateOf(false) }
-                            Box(contentAlignment = Alignment.Center) {
+                            Box {
                                 CardContent(state[it], refreshEnabled = loading) {
                                     scope.launch {
                                         loading.value = true
@@ -172,8 +192,36 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
                                         }
                                     }
                                 }
+                                this@Card.AnimatedVisibility(
+                                    modifier = Modifier.align(Alignment.TopEnd),
+                                    visible = removeAction.value,
+                                    enter = fadeIn(),
+                                    exit = fadeOut()
+                                ) {
+                                    Box(
+                                        contentAlignment = Alignment.Center,
+                                        modifier = Modifier
+                                            .padding(top = 16.dp)
+                                            .padding(end = 16.dp)
+                                            .size(32.dp)
+                                            .background(color = CardDefaults.cardColors().containerColor)
+                                            .align(Alignment.TopEnd)
+                                            .clip(CircleShape)
+                                            .clickable {
+                                                repository.removeCard(state[it])
+                                            }
+                                    ) {
+                                        Icon(
+                                            modifier = Modifier.size(24.dp),
+                                            painter = painterResource(id = R.drawable.round_close_24),
+                                            contentDescription = ""
+                                        )
+                                    }
+                                }
+
                                 if (loading.value) {
                                     CircularProgressIndicator(
+                                        modifier = Modifier.align(Alignment.Center),
                                         strokeCap = StrokeCap.Round,
                                         color = MaterialTheme.colorScheme.tertiary
                                     )
@@ -203,9 +251,11 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
             }
         }
 
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = alpha.value)))
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = alpha.value))
+        )
 
         AnimatedVisibility(
             modifier = Modifier
@@ -414,7 +464,7 @@ fun CardContent(
                     fontWeight = FontWeight.ExtraLight
                 )
                 Text(
-                    text = "Добавлено\n${model.date}",
+                    text = "Обновлено\n${model.date}",
                     fontSize = 15.6.sp,
                     textAlign = TextAlign.End
                 )

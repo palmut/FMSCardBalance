@@ -130,7 +130,7 @@ class DefaultBalanceRepository(
             balanceList.toMutableList()
         }
 
-        if (balanceList.isEmpty()) {
+        if (balanceList.isEmpty() && false) {
             val tempBalanceList = listOf(
                 CardModel(
                     title = "Спорт", availableAmount = "0", tail = "0356"
@@ -242,7 +242,8 @@ data class CardModel(
 
     @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     @SerialName("date")
-    val date: String = getDate()
+    val date: String
+        get() = getDate()
 }
 
 fun BalanceRepository.Data.map(title: String) = CardModel(
