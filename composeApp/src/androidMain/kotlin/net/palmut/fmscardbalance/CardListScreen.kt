@@ -1,5 +1,3 @@
-@file:OptIn(InternalResourceApi::class)
-
 package net.palmut.fmscardbalance
 
 import androidx.compose.animation.AnimatedVisibility
@@ -10,17 +8,13 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.DraggableState
 import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,16 +33,13 @@ import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CardElevation
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
@@ -61,16 +52,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -85,8 +78,6 @@ import data.DefaultBalanceRepository
 import data.Preferences
 import data.PreviewBalanceRepository
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.InternalResourceApi
 import ui.AppTheme
@@ -139,7 +130,8 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
             InputField(
                 modifier = Modifier
                     .systemBarsPadding()
-                    .padding(top = 16.dp),
+                    .padding(top = 16.dp)
+                    .advancedShadow(cornersRadius = 16.dp),
                 type = InputFieldType.PHONE,
                 state = phone.value
             ) {
@@ -162,6 +154,7 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
                                 .scale(scale.value)
                                 .offset(y = offsetY.value)
                                 .shadow(elevation = elevation.value)
+                                .advancedShadow()
                                 .zIndex(zIndex.value)
                                 .draggable(
                                     onDragStopped = onDragStopped,
@@ -236,6 +229,7 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
                 modifier = Modifier
                     .navigationBarsPadding()
                     .padding(bottom = 16.dp)
+                    .advancedShadow(cornersRadius = 16.dp)
                     .height(48.dp)
                     .fillMaxWidth(CARD_WIDTH)
                     .zIndex(-5f),
@@ -470,6 +464,39 @@ fun CardContent(
                 )
             }
         }
+    }
+}
+
+fun Modifier.advancedShadow(
+    color: Color = Color.Black,
+    alpha: Float = 0.9f,
+    cornersRadius: Dp = 10.dp,
+    offsetY: Dp = 3.dp,
+    offsetX: Dp = 3.dp
+) = drawBehind {
+
+    val shadowColor = color.copy(alpha = alpha).toArgb()
+    val transparentColor = color.copy(alpha = 0f).toArgb()
+
+    drawIntoCanvas {
+        val paint = Paint()
+        val frameworkPaint = paint.asFrameworkPaint()
+        frameworkPaint.color = transparentColor
+        frameworkPaint.setShadowLayer(
+            0.1f,
+            offsetX.toPx(),
+            offsetY.toPx(),
+            shadowColor
+        )
+        it.drawRoundRect(
+            0f,
+            0f,
+            this.size.width,
+            this.size.height,
+            cornersRadius.toPx(),
+            cornersRadius.toPx(),
+            paint
+        )
     }
 }
 
