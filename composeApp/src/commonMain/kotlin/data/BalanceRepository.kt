@@ -102,7 +102,7 @@ class BalanceRepository {
         @SerialName("cardType")
         val cardType: String? = null,
         @SerialName("smsInfoStatus")
-        val smsInfoStatus: String?
+        val smsInfoStatus: String? = null
     )
 
     @Serializable
