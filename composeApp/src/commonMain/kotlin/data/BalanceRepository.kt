@@ -2,12 +2,17 @@ package data
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.logging.DEFAULT
+import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.logging.SIMPLE
+import io.ktor.client.request.accept
 import io.ktor.client.request.get
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 import io.ktor.http.encodeURLPath
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.Dispatchers
@@ -15,6 +20,7 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 class BalanceRepository {
 
@@ -23,11 +29,14 @@ class BalanceRepository {
             pipelining = true
         }
         install(Logging) {
-            logger = Logger.DEFAULT
+            logger = Logger.SIMPLE
             level = LogLevel.ALL
         }
         install(ContentNegotiation) {
             json()
+        }
+        install(HttpTimeout) {
+            socketTimeoutMillis = 10000
         }
     }
 
@@ -67,9 +76,9 @@ class BalanceRepository {
         @SerialName("activationDate")
         val activationDate: String? = null,
         @SerialName("orderId")
-        val orderId: String,
+        val orderId: String?,
         @SerialName("validUntil")
-        val validUntil: String,
+        val validUntil: String?,
         @SerialName("goalCard")
         val goalCard: Boolean? = null,
         @SerialName("activationCode")
@@ -91,7 +100,9 @@ class BalanceRepository {
         @SerialName("phone")
         val phone: String? = null,
         @SerialName("cardType")
-        val cardType: String? = null
+        val cardType: String? = null,
+        @SerialName("smsInfoStatus")
+        val smsInfoStatus: String?
     )
 
     @Serializable
