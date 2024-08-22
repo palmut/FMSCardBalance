@@ -267,6 +267,7 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
                     modifier = Modifier
                         .fillMaxWidth(CARD_WIDTH)
                         .padding(bottom = 16.dp)
+                        .advancedShadow()
                         .aspectRatio(CARD_ASPECT_RATIO),
                     shape = MaterialTheme.shapes.small.copy(CornerSize(10.dp))
                 ) {
@@ -277,14 +278,22 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
                     ) {
                         Column {
                             Text(text = "Название карты".lowercase())
-                            InputField(state = cardTitle, type = InputFieldType.TEXT) {
+                            InputField(
+                                modifier = Modifier.advancedShadow(cornersRadius = 16.dp),
+                                state = cardTitle,
+                                type = InputFieldType.TEXT
+                            ) {
                                 cardTitle = it
                                 newModel.value = newModel.value.copy(title = it)
                             }
                         }
                         Column {
                             Text(text = "4 цифры карты".lowercase())
-                            InputField(state = cardPan, type = InputFieldType.NUMBER) {
+                            InputField(
+                                modifier = Modifier.advancedShadow(cornersRadius = 16.dp),
+                                state = cardPan,
+                                type = InputFieldType.NUMBER
+                            ) {
                                 cardPan = it
                                 newModel.value = newModel.value.copy(tail = it)
                             }
@@ -295,6 +304,7 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
                 TextButton(
                     modifier = Modifier
                         .padding(bottom = 16.dp)
+                        .advancedShadow(cornersRadius = 16.dp)
                         .height(48.dp)
                         .fillMaxWidth(CARD_WIDTH)
                         .zIndex(-5f),
@@ -314,6 +324,7 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
 
                 TextButton(
                     modifier = Modifier
+                        .advancedShadow(cornersRadius = 16.dp)
                         .height(48.dp)
                         .fillMaxWidth(CARD_WIDTH)
                         .zIndex(-5f),
