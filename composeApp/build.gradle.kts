@@ -66,8 +66,8 @@ kotlin {
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.client.logging)
             implementation(libs.ktor.serialization.kotlinx.json)
-            implementation("org.slf4j:slf4j-api:2.0.16")
-            implementation("org.slf4j:slf4j-simple:2.0.16")
+            implementation(libs.slf4j.api)
+            implementation(libs.slf4j.simple)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
