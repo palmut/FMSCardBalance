@@ -1,4 +1,4 @@
-package net.palmut.fmscardbalance
+package ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
@@ -35,7 +35,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -64,10 +63,8 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -75,11 +72,11 @@ import androidx.compose.ui.zIndex
 import data.BalanceRepository
 import data.CardModel
 import data.DefaultBalanceRepository
-import data.SharedPreferences
 import data.PreviewBalanceRepository
+import data.SharedPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import ui.AppTheme
+import org.jetbrains.compose.ui.tooling.preview.Preview
 
 private const val CARD_ASPECT_RATIO = 1.58f
 const val CARD_WIDTH = 0.8f
@@ -90,6 +87,7 @@ private const val NOT_TRANSPARENT = 0f
 fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
 
     val state by repository.balance.collectAsState()
+//    val state by  remember { mutableStateOf<List<CardModel>>(emptyList()) }
 
     val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
@@ -203,11 +201,11 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
                                                 repository.removeCard(state[it])
                                             }
                                     ) {
-                                        Icon(
+                                       /* Icon(
                                             modifier = Modifier.size(24.dp),
                                             painter = painterResource(id = R.drawable.round_close_24),
                                             contentDescription = ""
-                                        )
+                                        )*/
                                     }
                                 }
 
@@ -433,11 +431,11 @@ fun CardContent(
                         }
                     }
             ) {
-                Icon(
+                /*Icon(
                     modifier = Modifier.size(24.dp),
                     painter = painterResource(id = R.drawable.ic_refresh),
                     contentDescription = ""
-                )
+                )*/
             }
         }
 
@@ -482,7 +480,8 @@ fun Modifier.advancedShadow(
     alpha: Float = 0.9f,
     cornersRadius: Dp = 10.dp,
     offsetY: Dp = 3.dp,
-    offsetX: Dp = 3.dp
+    offsetX: Dp = 3.dp,
+    blurRadius: Float = 0.1f,
 ) = drawBehind {
 
     val shadowColor = color.copy(alpha = alpha).toArgb()
@@ -492,17 +491,22 @@ fun Modifier.advancedShadow(
         val paint = Paint()
         val frameworkPaint = paint.asFrameworkPaint()
         frameworkPaint.color = transparentColor
-        frameworkPaint.setShadowLayer(
+
+        /*if (blurRadius != 0f) {
+            frameworkPaint.setMaskFilter(blurRadius)
+        }*/
+
+        /*frameworkPaint.setShadowLayer(
             0.1f,
             offsetX.toPx(),
             offsetY.toPx(),
             shadowColor
-        )
+        )*/
         it.drawRoundRect(
             0f,
             0f,
-            this.size.width,
-            this.size.height,
+            this.size.width + offsetX.toPx(),
+            this.size.height + offsetY.toPx(),
             cornersRadius.toPx(),
             cornersRadius.toPx(),
             paint

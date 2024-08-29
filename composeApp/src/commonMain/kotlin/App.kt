@@ -28,7 +28,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import data.BalanceRepository
 import data.DefaultBalanceRepository
-import data.Preferences
+import data.SharedPreferences
 import fmscardbalance.composeapp.generated.resources.Res
 import fmscardbalance.composeapp.generated.resources.app_title
 import fmscardbalance.composeapp.generated.resources.balance_amount
@@ -50,8 +50,8 @@ fun App() {
     AppTheme {
 
         val scope = rememberCoroutineScope()
-        val phone = mutableStateOf(Preferences.INSTANCE.getString("phone") ?: "")
-        val card = mutableStateOf(Preferences.INSTANCE.getString("card") ?: "")
+        val phone = mutableStateOf(SharedPreferences.INSTANCE.getString("phone") ?: "")
+        val card = mutableStateOf(SharedPreferences.INSTANCE.getString("card") ?: "")
         val balance = mutableStateOf(BalanceRepository.Response())
         val keyboardController = LocalSoftwareKeyboardController.current
         val loading = mutableStateOf(false)
@@ -114,8 +114,8 @@ fun App() {
                     shape = RoundedCornerShape(8.dp),
                     onClick = {
                         scope.launch {
-                            Preferences.INSTANCE.putString("phone", phone.value)
-                            Preferences.INSTANCE.putString("card", card.value)
+                            SharedPreferences.INSTANCE.putString("phone", phone.value)
+                            SharedPreferences.INSTANCE.putString("card", card.value)
                             keyboardController?.hide()
                             try {
                                 loading.value = true

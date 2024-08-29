@@ -1,11 +1,11 @@
 package data
 
-expect class Preferences() {
+expect class SharedPreferences() {
 
     fun putString(key: String, value: String)
     fun getString(key: String): String?
 
     companion object {
-        var INSTANCE: Preferences
+        var INSTANCE: SharedPreferences
     }
 }

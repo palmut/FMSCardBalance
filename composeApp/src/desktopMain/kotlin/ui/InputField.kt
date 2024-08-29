@@ -1,4 +1,4 @@
-package net.palmut.fmscardbalance
+package ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -22,11 +22,9 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import ui.AppTheme
 
 @Composable
 fun InputField(
@@ -102,7 +100,7 @@ enum class InputFieldType {
     TEXT, NUMBER, PASSWORD, PHONE
 }
 
-@Preview
+
 @Composable
 fun InputFieldPreview() {
     AppTheme {

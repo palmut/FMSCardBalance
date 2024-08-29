@@ -3,7 +3,7 @@ package data
 import android.content.Context
 import android.content.SharedPreferences
 
-actual class Preferences actual constructor() {
+actual class SharedPreferences actual constructor() {
 
     constructor(context: Context): this() {
         this.prefs = context.getSharedPreferences("PREfS", Context.MODE_PRIVATE)
@@ -20,10 +20,10 @@ actual class Preferences actual constructor() {
     }
 
     actual companion object {
-        actual var INSTANCE: Preferences = Preferences()
+        actual var INSTANCE: data.SharedPreferences = SharedPreferences()
 
         fun create(context: Context) {
-            INSTANCE = Preferences(context)
+            INSTANCE = SharedPreferences(context)
         }
     }
 }

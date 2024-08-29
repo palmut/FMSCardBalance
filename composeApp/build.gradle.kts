@@ -1,3 +1,4 @@
+import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -10,6 +11,16 @@ plugins {
 }
 
 kotlin {
+    jvm("desktop")
+
+    macosX64("native") {
+        binaries {
+            framework {
+                baseName = "KmpJsonKit"
+            }
+        }
+    }
+
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
         compilerOptions {
@@ -29,7 +40,7 @@ kotlin {
     }
 
     sourceSets {
-
+        val desktopMain by getting
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
@@ -47,7 +58,6 @@ kotlin {
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
-//            implementation(compose.material)
             implementation(compose.material3)
             implementation(compose.ui)
             implementation(compose.components.resources)
@@ -56,9 +66,17 @@ kotlin {
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.client.logging)
             implementation(libs.ktor.serialization.kotlinx.json)
+            implementation("org.slf4j:slf4j-api:2.0.16")
+            implementation("org.slf4j:slf4j-simple:2.0.16")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+        }
+        desktopMain.dependencies {
+            implementation(compose.preview)
+            implementation(libs.ktor.client.okhttp)
+            implementation(compose.desktop.currentOs)
+            implementation(libs.kotlinx.coroutines.swing)
         }
     }
 
@@ -111,5 +129,21 @@ dependencies {
     testImplementation(libs.kotlin.test)
     testImplementation(libs.kotlin.test.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+}
+
+compose.desktop {
+    application {
+        mainClass = "net.palmut.fmscardbalance.MainKt"
+
+        nativeDistributions {
+            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            packageName = "СУП Баланс"
+            packageVersion = "1.0.0"
+            macOS {
+                iconFile.set(project.file("ic_launcher.icns"))
+            }
+            outputBaseDir.set(project.layout.projectDirectory.dir("Distr"))
+        }
+    }
 }
 

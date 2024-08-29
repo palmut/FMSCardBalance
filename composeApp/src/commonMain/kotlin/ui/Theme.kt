@@ -16,6 +16,7 @@ fun AppTheme(
             background = Color(0xFFDCDAB5),
             surface = Color(0xFFDCDAB5),
         ),
+        typography = Typography,
         content = content
     )
 }
