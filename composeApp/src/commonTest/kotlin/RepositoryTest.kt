@@ -1,4 +1,4 @@
-import data.DefaultBalanceRepository
+import net.palmut.fmscardbalance.data.DefaultBalanceRepository
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertTrue

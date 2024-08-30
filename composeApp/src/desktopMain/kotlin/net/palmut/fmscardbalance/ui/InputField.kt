@@ -1,4 +1,4 @@
-package ui
+package net.palmut.fmscardbalance.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background

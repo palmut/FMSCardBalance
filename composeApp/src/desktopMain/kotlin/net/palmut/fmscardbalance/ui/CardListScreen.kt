@@ -1,4 +1,4 @@
-package ui
+package net.palmut.fmscardbalance.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
@@ -7,13 +7,22 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.DraggableState
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,10 +31,22 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
@@ -37,17 +58,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.NativePaint
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.platform.WindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -55,11 +83,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import data.BalanceRepository
-import data.CardModel
-import data.DefaultBalanceRepository
-import data.PreviewBalanceRepository
-import data.SharedPreferences
+import net.palmut.fmscardbalance.data.BalanceRepository
+import net.palmut.fmscardbalance.data.CardModel
+import net.palmut.fmscardbalance.data.DefaultBalanceRepository
+import net.palmut.fmscardbalance.data.PreviewBalanceRepository
+import net.palmut.fmscardbalance.data.SharedPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -71,11 +99,16 @@ const val CARD_WIDTH = 0.8f
 private const val SEMITRANSPARENT = 0.9f
 private const val NOT_TRANSPARENT = 0f
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
 
     val state by repository.balance.collectAsState()
-//    val state by  remember { mutableStateOf<List<CardModel>>(emptyList()) }
+
+    val configuration = LocalWindowInfo.current
+
+    val screenWidth = configuration.containerSize.width.dp
+    val screenHeight = configuration.containerSize.height.dp
 
     val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
@@ -124,89 +157,78 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
                 preferences.putString("phone", it)
             }
 
-            Box(
-                modifier = Modifier
-//                    .verticalScroll(rememberScrollState())
+            LazyColumn (
+                modifier = Modifier.fillMaxWidth().fillMaxHeight().weight(0.9f),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                contentPadding = PaddingValues(vertical = 16.dp)
             ) {
-                val shape = MaterialTheme.shapes.small.copy(CornerSize(10.dp))
-                MaskFilter
-                repeat(state.size) {
-                    AnimatedCard { border, offsetY, zIndex, scale, draggableState, onDragStopped ->
-                        var removeAction = remember { mutableStateOf(false) }
-                        Card(
-                            colors = CardDefaults.cardColors(),
-                            border = BorderStroke(border.value, Color.Black),
-                            modifier = Modifier
-                                .fillMaxWidth(CARD_WIDTH)
-                                .aspectRatio(CARD_ASPECT_RATIO)
-                                .scale(scale.value)
-                                .offset(y = offsetY.value)
-                                .shadow(elevation = elevation.value)
-                                .advancedShadow()
-                                .zIndex(zIndex.value)
-                                .draggable(
-                                    onDragStopped = onDragStopped,
-                                    state = draggableState,
-                                    orientation = Orientation.Vertical
+                items(state.size) {
+                    val removeAction = remember { mutableStateOf(false) }
+                    Card(
+                        colors = CardDefaults.cardColors(),
+                        border = BorderStroke(3.dp, Color.Black),
+                        modifier = Modifier
+                            .width(screenWidth - 32.dp)
+                            .aspectRatio(CARD_ASPECT_RATIO)
+                            .advancedShadow()
+                            .pointerInput(Unit) {
+                                detectTapGestures(
+                                    onLongPress = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        removeAction.value = removeAction.value.not()
+                                    }
                                 )
-                                .pointerInput(Unit) {
-                                    detectTapGestures(
-                                        onLongPress = {
-                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            removeAction.value = removeAction.value.not()
-                                        }
-                                    )
-                                },
-                            shape = MaterialTheme.shapes.small.copy(CornerSize(10.dp))
-                        ) {
-                            val loading = remember { mutableStateOf(false) }
-                            Box {
-                                CardContent(state[it], refreshEnabled = loading) {
-                                    scope.launch {
-                                        loading.value = true
-                                        try {
-                                            repository.getBalance(phone.value, it)
-                                        } catch (e: Exception) {
+                            },
+                        shape = MaterialTheme.shapes.small.copy(CornerSize(10.dp))
+                    ) {
+                        val loading = remember { mutableStateOf(false) }
+                        Box {
+                            CardContent(state[it], refreshEnabled = loading) {
+                                scope.launch {
+                                    loading.value = true
+                                    try {
+                                        repository.getBalance(phone.value, it)
+                                    } catch (e: Exception) {
 
-                                        } finally {
-                                            loading.value = false
-                                        }
+                                    } finally {
+                                        loading.value = false
                                     }
                                 }
-                                this@Card.AnimatedVisibility(
-                                    modifier = Modifier.align(Alignment.TopEnd),
-                                    visible = removeAction.value,
-                                    enter = fadeIn(),
-                                    exit = fadeOut()
+                            }
+                            this@Card.AnimatedVisibility(
+                                modifier = Modifier.align(Alignment.TopEnd),
+                                visible = removeAction.value,
+                                enter = fadeIn(),
+                                exit = fadeOut()
+                            ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier
+                                        .padding(top = 16.dp)
+                                        .padding(end = 16.dp)
+                                        .size(32.dp)
+                                        .background(color = CardDefaults.cardColors().containerColor)
+                                        .align(Alignment.TopEnd)
+                                        .clip(CircleShape)
+                                        .clickable {
+                                            repository.removeCard(state[it])
+                                        }
                                 ) {
-                                    Box(
-                                        contentAlignment = Alignment.Center,
-                                        modifier = Modifier
-                                            .padding(top = 16.dp)
-                                            .padding(end = 16.dp)
-                                            .size(32.dp)
-                                            .background(color = CardDefaults.cardColors().containerColor)
-                                            .align(Alignment.TopEnd)
-                                            .clip(CircleShape)
-                                            .clickable {
-                                                repository.removeCard(state[it])
-                                            }
-                                    ) {
-                                        Icon(
-                                            modifier = Modifier.size(24.dp),
-                                            painter = painterResource("close.png"),
-                                            contentDescription = ""
-                                        )
-                                    }
-                                }
-
-                                if (loading.value) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.align(Alignment.Center),
-                                        strokeCap = StrokeCap.Round,
-                                        color = MaterialTheme.colorScheme.tertiary
+                                    Icon(
+                                        modifier = Modifier.size(24.dp),
+                                        painter = painterResource("close.png"),
+                                        contentDescription = ""
                                     )
                                 }
+                            }
+
+                            if (loading.value) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.align(Alignment.Center),
+                                    strokeCap = StrokeCap.Round,
+                                    color = MaterialTheme.colorScheme.tertiary
+                                )
                             }
                         }
                     }
@@ -253,7 +275,7 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
                 Card(
                     border = BorderStroke(3.dp, Color.Black),
                     modifier = Modifier
-                        .fillMaxWidth(CARD_WIDTH)
+                        .width(screenWidth)
                         .padding(bottom = 16.dp)
                         .advancedShadow()
                         .aspectRatio(CARD_ASPECT_RATIO),
@@ -294,7 +316,7 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
                         .padding(bottom = 16.dp)
                         .advancedShadow(cornersRadius = 16.dp)
                         .height(48.dp)
-                        .fillMaxWidth(CARD_WIDTH)
+                        .width(screenWidth)
                         .zIndex(-5f),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.textButtonColors(containerColor = Color(0xFF138DFF)),
@@ -314,7 +336,7 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
                     modifier = Modifier
                         .advancedShadow(cornersRadius = 16.dp)
                         .height(48.dp)
-                        .fillMaxWidth(CARD_WIDTH)
+                        .width(screenWidth)
                         .zIndex(-5f),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.textButtonColors(containerColor = Color(0xFF138DFF)),

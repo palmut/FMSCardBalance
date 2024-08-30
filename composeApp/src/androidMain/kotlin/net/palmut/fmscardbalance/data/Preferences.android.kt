@@ -1,4 +1,4 @@
-package data
+package net.palmut.fmscardbalance.data
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -20,10 +20,11 @@ actual class SharedPreferences actual constructor() {
     }
 
     actual companion object {
-        actual var INSTANCE: data.SharedPreferences = SharedPreferences()
+        actual var INSTANCE: net.palmut.fmscardbalance.data.SharedPreferences =
+            net.palmut.fmscardbalance.data.SharedPreferences()
 
         fun create(context: Context) {
-            INSTANCE = SharedPreferences(context)
+            INSTANCE = net.palmut.fmscardbalance.data.SharedPreferences(context)
         }
     }
 }

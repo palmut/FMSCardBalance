@@ -1,4 +1,4 @@
-package net.palmut.fmscardbalance
+package net.palmut.fmscardbalance.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
@@ -72,14 +72,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import data.BalanceRepository
-import data.CardModel
-import data.DefaultBalanceRepository
-import data.SharedPreferences
-import data.PreviewBalanceRepository
+import net.palmut.fmscardbalance.data.BalanceRepository
+import net.palmut.fmscardbalance.data.CardModel
+import net.palmut.fmscardbalance.data.DefaultBalanceRepository
+import net.palmut.fmscardbalance.data.SharedPreferences
+import net.palmut.fmscardbalance.data.PreviewBalanceRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import ui.AppTheme
+import net.palmut.fmscardbalance.R
 
 private const val CARD_ASPECT_RATIO = 1.58f
 const val CARD_WIDTH = 0.8f

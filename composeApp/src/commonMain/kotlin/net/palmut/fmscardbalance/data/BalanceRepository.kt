@@ -1,6 +1,5 @@
-package data
+package net.palmut.fmscardbalance.data
 
-import getDate
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.HttpTimeout
@@ -32,7 +31,7 @@ interface BalanceRepository {
     data class Response(
         @SerialName("status") val status: String? = null,
         @SerialName("messages") val messages: List<Message>? = null,
-        @SerialName("data") val data: Data? = null
+        @SerialName("net/palmut/fmscardbalance/data") val data: Data? = null
     )
 
     @Serializable

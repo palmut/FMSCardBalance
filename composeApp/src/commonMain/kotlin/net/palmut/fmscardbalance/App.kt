@@ -1,3 +1,5 @@
+package net.palmut.fmscardbalance
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -26,9 +28,9 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import data.BalanceRepository
-import data.DefaultBalanceRepository
-import data.SharedPreferences
+import net.palmut.fmscardbalance.data.BalanceRepository
+import net.palmut.fmscardbalance.data.DefaultBalanceRepository
+import net.palmut.fmscardbalance.data.SharedPreferences
 import fmscardbalance.composeapp.generated.resources.Res
 import fmscardbalance.composeapp.generated.resources.app_title
 import fmscardbalance.composeapp.generated.resources.balance_amount
@@ -39,9 +41,9 @@ import fmscardbalance.composeapp.generated.resources.error_connection
 import fmscardbalance.composeapp.generated.resources.error_other
 import fmscardbalance.composeapp.generated.resources.phone_label
 import kotlinx.coroutines.launch
+import net.palmut.fmscardbalance.ui.AppTheme
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import ui.AppTheme
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

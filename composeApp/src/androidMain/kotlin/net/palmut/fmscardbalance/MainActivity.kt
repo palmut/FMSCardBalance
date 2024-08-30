@@ -1,6 +1,5 @@
 package net.palmut.fmscardbalance
 
-import App
 import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -11,8 +10,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
-import data.SharedPreferences
-import ui.AppTheme
+import net.palmut.fmscardbalance.data.SharedPreferences
+import net.palmut.fmscardbalance.ui.AppTheme
+import net.palmut.fmscardbalance.ui.CardListScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

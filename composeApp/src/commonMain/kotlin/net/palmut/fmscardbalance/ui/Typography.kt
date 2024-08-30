@@ -1,4 +1,4 @@
-package ui
+package net.palmut.fmscardbalance.ui
 
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
