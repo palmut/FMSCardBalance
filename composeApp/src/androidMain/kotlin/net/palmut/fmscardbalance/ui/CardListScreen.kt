@@ -1,5 +1,6 @@
 package net.palmut.fmscardbalance.ui
 
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -11,15 +12,16 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.DraggableState
-import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,7 +29,11 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -53,8 +59,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.StrokeCap
@@ -64,6 +68,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -72,14 +77,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import net.palmut.fmscardbalance.data.BalanceRepository
-import net.palmut.fmscardbalance.data.CardModel
-import net.palmut.fmscardbalance.data.DefaultBalanceRepository
-import net.palmut.fmscardbalance.data.SharedPreferences
-import net.palmut.fmscardbalance.data.PreviewBalanceRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import net.palmut.fmscardbalance.R
+import net.palmut.fmscardbalance.data.BalanceRepository
+import net.palmut.fmscardbalance.data.CardModel
+import net.palmut.fmscardbalance.data.DefaultBalanceRepository
+import net.palmut.fmscardbalance.data.PreviewBalanceRepository
+import net.palmut.fmscardbalance.data.SharedPreferences
 
 private const val CARD_ASPECT_RATIO = 1.58f
 const val CARD_WIDTH = 0.8f
@@ -103,8 +108,9 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
     val alphaTarget = remember { mutableFloatStateOf(NOT_TRANSPARENT) }
     val alpha = animateFloatAsState(targetValue = alphaTarget.floatValue, label = "alpha")
 
-    val elevationTarget = remember { mutableStateOf(0.dp) }
-    val elevation = animateDpAsState(targetValue = elevationTarget.value, label = "elevation")
+    val systemPadding  = WindowInsets.statusBars.getTop(LocalDensity.current).dp
+
+    Log.d("TAG", "CardListScreen: $systemPadding")
 
     val newModel = remember {
         mutableStateOf(
@@ -116,18 +122,96 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
         )
     }
 
-    var focusedCardZIndex by remember { mutableFloatStateOf(0f) }
-
     Box {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFFFFFFF9)),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
         ) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxHeight()
+
+                    .align(Alignment.Center),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                contentPadding = PaddingValues(vertical = systemPadding.plus(32.dp))
+            ) {
+                items(state.size) {
+                    val removeAction = remember { mutableStateOf(false) }
+                    Card(
+                        colors = CardDefaults.cardColors(),
+                        border = BorderStroke(3.dp, Color.Black),
+                        modifier = Modifier
+                            .fillMaxWidth(CARD_WIDTH)
+                            .aspectRatio(CARD_ASPECT_RATIO)
+                            .advancedShadow()
+                            .pointerInput(Unit) {
+                                detectTapGestures(
+                                    onLongPress = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        removeAction.value = removeAction.value.not()
+                                    }
+                                )
+                            },
+                        shape = MaterialTheme.shapes.small.copy(CornerSize(10.dp))
+                    ) {
+                        val loading = remember { mutableStateOf(false) }
+                        Box {
+                            CardContent(state[it], refreshEnabled = loading) {
+                                scope.launch {
+                                    loading.value = true
+                                    try {
+                                        repository.getBalance(phone.value, it)
+                                    } catch (e: Exception) {
+
+                                    } finally {
+                                        loading.value = false
+                                    }
+                                }
+                            }
+                            this@Card.AnimatedVisibility(
+                                modifier = Modifier.align(Alignment.TopEnd),
+                                visible = removeAction.value,
+                                enter = fadeIn(),
+                                exit = fadeOut()
+                            ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier
+                                        .padding(top = 16.dp)
+                                        .padding(end = 16.dp)
+                                        .size(32.dp)
+                                        .background(color = CardDefaults.cardColors().containerColor)
+                                        .align(Alignment.TopEnd)
+                                        .clip(CircleShape)
+                                        .clickable {
+                                            repository.removeCard(state[it])
+                                        }
+                                ) {
+                                    Icon(
+                                        modifier = Modifier.size(24.dp),
+                                        painter = painterResource(id = R.drawable.round_close_24),
+                                        contentDescription = ""
+                                    )
+                                }
+                            }
+
+                            if (loading.value) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.align(Alignment.Center),
+                                    strokeCap = StrokeCap.Round,
+                                    color = MaterialTheme.colorScheme.tertiary
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             InputField(
                 modifier = Modifier
+                    .align(Alignment.TopCenter)
                     .systemBarsPadding()
                     .padding(top = 16.dp)
                     .advancedShadow(cornersRadius = 16.dp),
@@ -138,100 +222,14 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
                 preferences.putString("phone", it)
             }
 
-            Box(modifier = Modifier) {
-                val shape = MaterialTheme.shapes.small.copy(CornerSize(10.dp))
-
-                repeat(state.size) {
-                    AnimatedCard { border, offsetY, zIndex, scale, draggableState, onDragStopped ->
-                        var removeAction = remember { mutableStateOf(false) }
-                        Card(
-                            colors = CardDefaults.cardColors(),
-                            border = BorderStroke(border.value, Color.Black),
-                            modifier = Modifier
-                                .fillMaxWidth(CARD_WIDTH)
-                                .aspectRatio(CARD_ASPECT_RATIO)
-                                .scale(scale.value)
-                                .offset(y = offsetY.value)
-                                .shadow(elevation = elevation.value)
-                                .advancedShadow()
-                                .zIndex(zIndex.value)
-                                .draggable(
-                                    onDragStopped = onDragStopped,
-                                    state = draggableState,
-                                    orientation = Orientation.Vertical
-                                )
-                                .pointerInput(Unit) {
-                                    detectTapGestures(
-                                        onLongPress = {
-                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            removeAction.value = removeAction.value.not()
-                                        }
-                                    )
-                                },
-                            shape = MaterialTheme.shapes.small.copy(CornerSize(10.dp))
-                        ) {
-                            val loading = remember { mutableStateOf(false) }
-                            Box {
-                                CardContent(state[it], refreshEnabled = loading) {
-                                    scope.launch {
-                                        loading.value = true
-                                        try {
-                                            repository.getBalance(phone.value, it)
-                                        } catch (e: Exception) {
-
-                                        } finally {
-                                            loading.value = false
-                                        }
-                                    }
-                                }
-                                this@Card.AnimatedVisibility(
-                                    modifier = Modifier.align(Alignment.TopEnd),
-                                    visible = removeAction.value,
-                                    enter = fadeIn(),
-                                    exit = fadeOut()
-                                ) {
-                                    Box(
-                                        contentAlignment = Alignment.Center,
-                                        modifier = Modifier
-                                            .padding(top = 16.dp)
-                                            .padding(end = 16.dp)
-                                            .size(32.dp)
-                                            .background(color = CardDefaults.cardColors().containerColor)
-                                            .align(Alignment.TopEnd)
-                                            .clip(CircleShape)
-                                            .clickable {
-                                                repository.removeCard(state[it])
-                                            }
-                                    ) {
-                                        Icon(
-                                            modifier = Modifier.size(24.dp),
-                                            painter = painterResource(id = R.drawable.round_close_24),
-                                            contentDescription = ""
-                                        )
-                                    }
-                                }
-
-                                if (loading.value) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.align(Alignment.Center),
-                                        strokeCap = StrokeCap.Round,
-                                        color = MaterialTheme.colorScheme.tertiary
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
             TextButton(
                 modifier = Modifier
+                    .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
                     .padding(bottom = 16.dp)
                     .advancedShadow(cornersRadius = 16.dp)
                     .height(48.dp)
-                    .fillMaxWidth(CARD_WIDTH)
-                    .zIndex(-5f),
+                    .fillMaxWidth(CARD_WIDTH),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.textButtonColors(containerColor = Color(0xFF138DFF)),
                 border = BorderStroke(2.dp, Color.Black),
@@ -305,8 +303,7 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
                         .padding(bottom = 16.dp)
                         .advancedShadow(cornersRadius = 16.dp)
                         .height(48.dp)
-                        .fillMaxWidth(CARD_WIDTH)
-                        .zIndex(-5f),
+                        .fillMaxWidth(CARD_WIDTH),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.textButtonColors(containerColor = Color(0xFF138DFF)),
                     border = BorderStroke(2.dp, Color.Black),

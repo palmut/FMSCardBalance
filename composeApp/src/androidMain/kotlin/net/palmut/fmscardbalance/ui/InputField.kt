@@ -63,7 +63,6 @@ fun InputField(
                 color = Color(0xFFFFFFF9),
                 shape = RoundedCornerShape(16.dp)
             )
-            .zIndex(-5f)
             .border(
                 border = BorderStroke(2.dp, Color.Black),
                 shape = RoundedCornerShape(16.dp)

@@ -11,11 +11,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.DraggableState
-import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,12 +30,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -62,8 +56,6 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.NativePaint
 import androidx.compose.ui.graphics.Paint
@@ -75,7 +67,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.platform.WindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -83,13 +74,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import net.palmut.fmscardbalance.data.BalanceRepository
 import net.palmut.fmscardbalance.data.CardModel
 import net.palmut.fmscardbalance.data.DefaultBalanceRepository
 import net.palmut.fmscardbalance.data.PreviewBalanceRepository
 import net.palmut.fmscardbalance.data.SharedPreferences
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.jetbrains.skia.FilterBlurMode
 import org.jetbrains.skia.MaskFilter
@@ -138,30 +129,16 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
     var focusedCardZIndex by remember { mutableFloatStateOf(0f) }
 
     Box {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFFFFFFF9)),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            InputField(
-                modifier = Modifier
-                    .systemBarsPadding()
-                    .padding(top = 16.dp)
-                    .advancedShadow(cornersRadius = 16.dp),
-                type = InputFieldType.PHONE,
-                state = phone.value
-            ) {
-                phone.value = it
-                preferences.putString("phone", it)
-            }
-
-            LazyColumn (
-                modifier = Modifier.fillMaxWidth().fillMaxHeight().weight(0.9f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(CARD_WIDTH).fillMaxHeight().align(Alignment.Center),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                contentPadding = PaddingValues(vertical = 16.dp)
+                contentPadding = PaddingValues(vertical = 80.dp)
             ) {
                 items(state.size) {
                     val removeAction = remember { mutableStateOf(false) }
@@ -235,14 +212,27 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
                 }
             }
 
+            InputField(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .systemBarsPadding()
+                    .padding(top = 16.dp)
+                    .advancedShadow(cornersRadius = 16.dp),
+                type = InputFieldType.PHONE,
+                state = phone.value
+            ) {
+                phone.value = it
+                preferences.putString("phone", it)
+            }
+
             TextButton(
                 modifier = Modifier
+                    .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
                     .padding(bottom = 16.dp)
                     .advancedShadow(cornersRadius = 16.dp)
                     .height(48.dp)
-                    .fillMaxWidth(CARD_WIDTH)
-                    .zIndex(-5f),
+                    .fillMaxWidth(CARD_WIDTH),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.textButtonColors(containerColor = Color(0xFF138DFF)),
                 border = BorderStroke(2.dp, Color.Black),
@@ -263,7 +253,7 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
 
         AnimatedVisibility(
             modifier = Modifier
-                .align(Alignment.Center),
+                .align(Alignment.Center).fillMaxWidth(CARD_WIDTH),
             visible = editing,
             enter = slideInVertically() + fadeIn(),
             exit = slideOutVertically() + fadeOut()
