@@ -31,7 +31,7 @@ interface BalanceRepository {
     data class Response(
         @SerialName("status") val status: String? = null,
         @SerialName("messages") val messages: List<Message>? = null,
-        @SerialName("net/palmut/fmscardbalance/data") val data: Data? = null
+        @SerialName("data") val data: Data? = null
     )
 
     @Serializable
