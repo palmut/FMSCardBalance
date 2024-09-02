@@ -2,14 +2,14 @@ package net.palmut.fmscardbalance.data
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.logging.SIMPLE
 import io.ktor.client.request.get
-import io.ktor.http.encodeURLPath
+import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -41,6 +41,13 @@ class DefaultBalanceRepository(
 ) : BalanceRepository {
 
     private val client = HttpClient {
+        defaultRequest {
+            url {
+                protocol = URLProtocol.HTTPS
+                host = "meal.gift-cards.ru/api/1/virtual-cards"
+            }
+            contentType(ContentType.Application.Json)
+        }
         engine {
             pipelining = true
         }
@@ -91,7 +98,7 @@ class DefaultBalanceRepository(
 
     override val getBalance: suspend (phone: String, pan: String) -> Response = { phone, pan ->
         withContext(Dispatchers.IO) {
-            val url = "https://meal.gift-cards.ru/api/1/virtual-cards/$phone/$pan".encodeURLPath()
+            val url = "/$phone/$pan".encodeURLPath()
             val response = client.get(url).body<Response>()
 
             response.data?.let { data ->
