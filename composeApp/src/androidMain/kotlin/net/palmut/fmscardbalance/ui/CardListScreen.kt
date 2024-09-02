@@ -135,7 +135,7 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
                     .align(Alignment.Center),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                contentPadding = PaddingValues(vertical = systemPadding.plus(32.dp))
+                contentPadding = PaddingValues(vertical = systemPadding.plus(64.dp))
             ) {
                 items(state.size) {
                     val removeAction = remember { mutableStateOf(false) }

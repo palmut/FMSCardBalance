@@ -84,6 +84,8 @@ import net.palmut.fmscardbalance.data.SharedPreferences
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.jetbrains.skia.FilterBlurMode
 import org.jetbrains.skia.MaskFilter
+import java.awt.Component
+import javax.swing.JButton
 
 private const val CARD_ASPECT_RATIO = 1.58f
 const val CARD_WIDTH = 0.8f
@@ -520,4 +522,15 @@ fun CardListScreenPreview() {
     AppTheme {
         CardListScreen(repository = PreviewBalanceRepository())
     }
+}
+
+fun actionButton(
+    text: String,
+    action: () -> Unit
+): JButton {
+    val button = JButton(text)
+    button.alignmentX = Component.CENTER_ALIGNMENT
+    button.addActionListener { action() }
+
+    return button
 }
