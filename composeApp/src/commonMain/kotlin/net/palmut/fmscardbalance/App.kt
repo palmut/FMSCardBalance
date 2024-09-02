@@ -28,7 +28,6 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import net.palmut.fmscardbalance.data.BalanceRepository
 import net.palmut.fmscardbalance.data.DefaultBalanceRepository
 import net.palmut.fmscardbalance.data.SharedPreferences
 import fmscardbalance.composeapp.generated.resources.Res
@@ -41,6 +40,7 @@ import fmscardbalance.composeapp.generated.resources.error_connection
 import fmscardbalance.composeapp.generated.resources.error_other
 import fmscardbalance.composeapp.generated.resources.phone_label
 import kotlinx.coroutines.launch
+import net.palmut.fmscardbalance.data.response.Response
 import net.palmut.fmscardbalance.ui.AppTheme
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -54,7 +54,7 @@ fun App() {
         val scope = rememberCoroutineScope()
         val phone = mutableStateOf(SharedPreferences.INSTANCE.getString("phone") ?: "")
         val card = mutableStateOf(SharedPreferences.INSTANCE.getString("card") ?: "")
-        val balance = mutableStateOf(BalanceRepository.Response())
+        val balance = mutableStateOf(Response())
         val keyboardController = LocalSoftwareKeyboardController.current
         val loading = mutableStateOf(false)
 
@@ -124,7 +124,7 @@ fun App() {
                                 val repository = DefaultBalanceRepository()
                                 balance.value = repository.getBalance(phone.value, card.value)
                             } catch (e: Exception) {
-                                balance.value = BalanceRepository.Response(
+                                balance.value = Response(
                                     status = "CONNECTION",
                                 )
                             } finally {

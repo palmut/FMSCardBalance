@@ -22,64 +22,12 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import net.palmut.fmscardbalance.data.response.Data
+import net.palmut.fmscardbalance.data.response.Response
 import kotlin.random.Random
 
 interface BalanceRepository {
     val balance: MutableStateFlow<MutableList<CardModel>>
-
-    @Serializable
-    data class Response(
-        @SerialName("status") val status: String? = null,
-        @SerialName("messages") val messages: List<Message>? = null,
-        @SerialName("data") val data: Data? = null
-    )
-
-    @Serializable
-    data class Message(
-        @SerialName("type") val type: String? = null,
-        @SerialName("context") val context: String? = null,
-        @SerialName("code") val code: String? = null,
-        @SerialName("path") val path: String? = null
-    )
-
-    @Serializable
-    data class Data(
-        @SerialName("status") val status: String? = null,
-        @SerialName("maskedPan") val maskedPan: String? = null,
-        @SerialName("activationDate") val activationDate: String? = null,
-        @SerialName("orderId") val orderId: String? = null,
-        @SerialName("validUntil") val validUntil: String?,
-        @SerialName("goalCard") val goalCard: Boolean? = null,
-        @SerialName("activationCode") val activationCode: String? = null,
-        @SerialName("expireDate") val expireDate: String? = null,
-        @SerialName("authLimitId") val authLimitId: String? = null,
-        @SerialName("customDomainPart") val customDomainPart: String? = null,
-        @SerialName("paymentDate") val paymentDate: String? = null,
-        @SerialName("smsNotificationAvailable") val smsNotificationAvailable: Boolean? = null,
-        @SerialName("balance") val balance: Balance? = null,
-        @SerialName("history") val history: List<HistoryItem>? = null,
-        @SerialName("phone") val phone: String? = null,
-        @SerialName("cardType") val cardType: String? = null,
-        @SerialName("smsInfoStatus") val smsInfoStatus: String? = null
-    )
-
-    @Serializable
-    data class Balance(
-        @SerialName("availableAmount") val availableAmount: Double? = null
-    )
-
-    @Serializable
-    data class HistoryItem(
-        @SerialName("time") val time: String? = null,
-        @SerialName("amount") val amount: Double? = null,
-        @SerialName("locationName") val locationName: List<String>? = null,
-        @SerialName("trnType") val trnType: Int? = null,
-        @SerialName("mcc") val mcc: String? = null,
-        @SerialName("currency") val currency: String? = null,
-        @SerialName("merchantId") val merchantId: String? = null,
-        @SerialName("reversal") val reversal: Boolean? = null,
-        @SerialName("posRechargeReceipt") val posRechargeReceipt: String? = null
-    )
 
     val getBalance: suspend (phone: String, pan: String) -> Response
 
@@ -141,10 +89,10 @@ class DefaultBalanceRepository(
         }
     }
 
-    override val getBalance: suspend (phone: String, pan: String) -> BalanceRepository.Response = { phone, pan ->
+    override val getBalance: suspend (phone: String, pan: String) -> Response = { phone, pan ->
         withContext(Dispatchers.IO) {
             val url = "https://meal.gift-cards.ru/api/1/virtual-cards/$phone/$pan".encodeURLPath()
-            val response = client.get(url).body<BalanceRepository.Response>()
+            val response = client.get(url).body<Response>()
 
             response.data?.let { data ->
                 this@DefaultBalanceRepository.balance.value.let {
@@ -238,7 +186,7 @@ data class CardModel(
         get() = getDate()
 }
 
-fun BalanceRepository.Data.map(title: String) = CardModel(
+fun Data.map(title: String) = CardModel(
     title = title,
     availableAmount = balance?.availableAmount?.toString() ?: "",
     tail = maskedPan?.takeLast(4) ?: ""
@@ -252,7 +200,7 @@ class PreviewBalanceRepository : BalanceRepository {
         )
     )
 
-    override val getBalance: suspend (phone: String, pan: String) -> BalanceRepository.Response
+    override val getBalance: suspend (phone: String, pan: String) -> Response
         get() = TODO("Not yet implemented")
 
     override val addCard: (cardModel: CardModel) -> Unit
