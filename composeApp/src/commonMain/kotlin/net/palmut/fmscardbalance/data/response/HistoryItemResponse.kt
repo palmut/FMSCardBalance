@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class HistoryItem(
+data class HistoryItemResponse(
     @SerialName("time") val time: String? = null,
     @SerialName("amount") val amount: Double? = null,
     @SerialName("locationName") val locationName: List<String>? = null,

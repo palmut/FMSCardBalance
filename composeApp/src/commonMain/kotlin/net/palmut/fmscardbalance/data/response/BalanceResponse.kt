@@ -4,6 +4,6 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Balance(
+data class BalanceResponse(
     @SerialName("availableAmount") val availableAmount: Double? = null
 )

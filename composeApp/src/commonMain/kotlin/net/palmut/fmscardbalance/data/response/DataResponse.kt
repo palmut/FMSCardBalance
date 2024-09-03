@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Data(
+data class DataResponse(
     @SerialName("status") val status: String? = null,
     @SerialName("maskedPan") val maskedPan: String? = null,
     @SerialName("activationDate") val activationDate: String? = null,
@@ -17,8 +17,8 @@ data class Data(
     @SerialName("customDomainPart") val customDomainPart: String? = null,
     @SerialName("paymentDate") val paymentDate: String? = null,
     @SerialName("smsNotificationAvailable") val smsNotificationAvailable: Boolean? = null,
-    @SerialName("balance") val balance: Balance? = null,
-    @SerialName("history") val history: List<HistoryItem>? = null,
+    @SerialName("balance") val balance: BalanceResponse? = null,
+    @SerialName("history") val history: List<HistoryItemResponse>? = null,
     @SerialName("phone") val phone: String? = null,
     @SerialName("cardType") val cardType: String? = null,
     @SerialName("smsInfoStatus") val smsInfoStatus: String? = null

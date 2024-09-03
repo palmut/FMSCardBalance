@@ -22,7 +22,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import net.palmut.fmscardbalance.data.response.Data
+import net.palmut.fmscardbalance.data.response.DataResponse
 import net.palmut.fmscardbalance.data.response.Response
 import kotlin.random.Random
 
@@ -193,7 +193,7 @@ data class CardModel(
         get() = getDate()
 }
 
-fun Data.map(title: String) = CardModel(
+fun DataResponse.map(title: String) = CardModel(
     title = title,
     availableAmount = balance?.availableAmount?.toString() ?: "",
     tail = maskedPan?.takeLast(4) ?: ""

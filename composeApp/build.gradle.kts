@@ -68,6 +68,16 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.slf4j.api)
             implementation(libs.slf4j.simple)
+
+            api(libs.mvikotlin.core)
+            api(libs.mvikotlin.main)
+            api(libs.mvikotlin.logging)
+            api(libs.mvikotlin.extensions.coroutines)
+            api(libs.decompose.decompose)
+            api(libs.decompose.extensions.compose)
+            api(libs.decompose.extensions.compose)
+            api(libs.essenty.lifecycle.core)
+            api(libs.essenty.lifecycle.coroutines)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
