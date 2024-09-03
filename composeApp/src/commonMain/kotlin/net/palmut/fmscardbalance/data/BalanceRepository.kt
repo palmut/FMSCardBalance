@@ -159,22 +159,6 @@ class DefaultBalanceRepository(
         val balanceListString = preferences.getString(phone) ?: "[]"
         Json.decodeFromString<List<CardModel>>(balanceListString)
     }
-
-    suspend fun fetchBalance(phone: String, pan: String) {
-        getBalance(phone, pan)
-    }
-
-    val saveCard: () -> Unit = {
-
-    }
-
-    fun getSavedBalance(phone: String): List<CardModel> {
-        val balance = preferences.getString(phone)
-
-        return balance?.let {
-            Json.decodeFromString<List<CardModel>>(it)
-        } ?: emptyList()
-    }
 }
 
 @OptIn(ExperimentalSerializationApi::class)

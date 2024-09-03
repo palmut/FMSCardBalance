@@ -1,12 +1,22 @@
 package net.palmut.fmscardbalance.component
 
 import com.arkivanov.decompose.value.Value
+import com.arkivanov.decompose.value.operator.map
+import com.arkivanov.mvikotlin.core.instancekeeper.getStore
+import net.palmut.fmscardbalance.RootComponentContext
+import net.palmut.fmscardbalance.asValue
+import net.palmut.fmscardbalance.component.MainComponent.Status
+import net.palmut.fmscardbalance.component.entity.Card
+import net.palmut.fmscardbalance.component.entity.NewCardState
+import net.palmut.fmscardbalance.data.DefaultBalanceRepository
+import net.palmut.fmscardbalance.store.MainStore
+import net.palmut.fmscardbalance.store.MainStoreProvider
 
 interface MainComponent {
     val model: Value<Model>
 
     data class Model(
-        val status: Status = Status.DEFAULT,
+        val status: Status = Status.LOADED,
         val data: List<Card> = emptyList(),
         val phoneState: String = "",
         val buttonEnable: Boolean = true,
@@ -14,7 +24,7 @@ interface MainComponent {
     )
 
     enum class Status {
-        LOADING, ERROR, LOADED, DEFAULT, SUCCESS;
+        LOADING, ERROR, LOADED, SUCCESS;
 
         operator fun invoke() = name
     }
@@ -38,20 +48,68 @@ interface MainComponent {
     /**
      *
      */
+    fun removeCard()
+    /**
+     *
+     */
     fun onBackPressed()
 }
 
-data class Card(
-    val title: String,
-    val availableAmount: String,
-    val tail: String,
-    val id: Int,
-    val date: String
-)
+class DefaultMainComponent(
+    private val componentContext: RootComponentContext
+) : MainComponent, RootComponentContext by componentContext {
 
-data class NewCardState(
-    val label: String = "",
-    val tail: String = ""
-)
+    private val store = instanceKeeper.getStore {
+        MainStoreProvider(
+            storeFactory = componentContext.storeFactory,
+            repository = DefaultBalanceRepository()
+        ).provide()
+    }
 
-fun Card.map() {}
+    override val model: Value<MainComponent.Model>
+        get() = store.asValue().map {
+            MainComponent.Model(
+                status = it.status.map()
+            )
+        }
+
+    override fun goToNewCard() {
+        TODO("Not yet implemented")
+    }
+
+    override fun addNewCard() {
+        TODO("Not yet implemented")
+    }
+
+    override fun setPhoneState(input: String) {
+        TODO("Not yet implemented")
+    }
+
+    override fun getBalance(tail: String) {
+        TODO("Not yet implemented")
+    }
+
+    override fun removeCard() {
+        TODO("Not yet implemented")
+    }
+
+    override fun onBackPressed() {
+        TODO("Not yet implemented")
+    }
+}
+
+fun Status.map() =
+    when (this) {
+        Status.LOADING -> MainStore.Status.LOADING
+        Status.ERROR -> MainStore.Status.ERROR
+        Status.LOADED -> MainStore.Status.LOADED
+        Status.SUCCESS -> MainStore.Status.SUCCESS
+    }
+
+fun MainStore.Status.map() =
+    when (this) {
+        MainStore.Status.LOADING -> Status.LOADING
+        MainStore.Status.ERROR -> Status.ERROR
+        MainStore.Status.LOADED -> Status.LOADED
+        MainStore.Status.SUCCESS -> Status.SUCCESS
+    }

@@ -1,67 +1,29 @@
 package net.palmut.fmscardbalance.ui
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.*
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.DraggableState
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.rememberDraggableState
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.State
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.NativePaint
-import androidx.compose.ui.graphics.Paint
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -74,11 +36,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import net.palmut.fmscardbalance.data.BalanceRepository
+import net.palmut.fmscardbalance.component.MainComponent
+import net.palmut.fmscardbalance.component.entity.Card
 import net.palmut.fmscardbalance.data.CardModel
-import net.palmut.fmscardbalance.data.DefaultBalanceRepository
 import net.palmut.fmscardbalance.data.PreviewBalanceRepository
 import net.palmut.fmscardbalance.data.SharedPreferences
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -94,9 +57,9 @@ private const val NOT_TRANSPARENT = 0f
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
+fun CardListScreen(component: MainComponent) {
 
-    val state by repository.balance.collectAsState()
+    val state by component.model.subscribeAsState()
 
     val configuration = LocalWindowInfo.current
 
@@ -142,7 +105,7 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 contentPadding = PaddingValues(vertical = 80.dp)
             ) {
-                items(state.size) {
+                items(state.data.size) {
                     val removeAction = remember { mutableStateOf(false) }
                     Card(
                         colors = CardDefaults.cardColors(),
@@ -163,11 +126,12 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
                     ) {
                         val loading = remember { mutableStateOf(false) }
                         Box {
-                            CardContent(state[it], refreshEnabled = loading) {
+                            CardContent(state.data[it], refreshEnabled = loading) {
                                 scope.launch {
                                     loading.value = true
+                                    component.getBalance(it)
                                     try {
-                                        repository.getBalance(phone.value, it)
+//                                        repository.getBalance(phone.value, it)
                                     } catch (e: Exception) {
 
                                     } finally {
@@ -191,7 +155,8 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
                                         .align(Alignment.TopEnd)
                                         .clip(CircleShape)
                                         .clickable {
-                                            repository.removeCard(state[it])
+                                            component.removeCard()
+//                                            repository.removeCard(state[it])
                                         }
                                 ) {
                                     Icon(
@@ -315,7 +280,8 @@ fun CardListScreen(repository: BalanceRepository = DefaultBalanceRepository()) {
                     border = BorderStroke(2.dp, Color.Black),
                     onClick = {
                         if (newModel.value.title.isNotEmpty() && newModel.value.tail.length == 4) {
-                            repository.addCard(newModel.value)
+                            component.addNewCard()
+//                            repository.addCard(newModel.value)
                             editing = false
                             alphaTarget.floatValue = NOT_TRANSPARENT
                         }
@@ -403,7 +369,7 @@ fun AnimatedCard(
 
 @Composable
 fun CardContent(
-    model: CardModel,
+    model: Card,
     refreshEnabled: MutableState<Boolean>,
     refresh: (String) -> Unit
 ) {
@@ -520,7 +486,7 @@ fun NativePaint.setMaskFilter(blurRadius: Float) {
 @Composable
 fun CardListScreenPreview() {
     AppTheme {
-        CardListScreen(repository = PreviewBalanceRepository())
+//        CardListScreen(repository = PreviewBalanceRepository())
     }
 }
 
