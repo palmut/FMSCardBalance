@@ -10,8 +10,8 @@ import androidx.compose.foundation.gestures.DraggableState
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,10 +24,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -38,12 +36,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import net.palmut.fmscardbalance.component.MainComponent
 import net.palmut.fmscardbalance.component.entity.Card
-import net.palmut.fmscardbalance.data.CardModel
-import net.palmut.fmscardbalance.data.PreviewBalanceRepository
-import net.palmut.fmscardbalance.data.SharedPreferences
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.jetbrains.skia.FilterBlurMode
 import org.jetbrains.skia.MaskFilter
@@ -53,7 +47,7 @@ import javax.swing.JButton
 private const val CARD_ASPECT_RATIO = 1.58f
 const val CARD_WIDTH = 0.8f
 private const val SEMITRANSPARENT = 0.9f
-private const val NOT_TRANSPARENT = 0f
+private const val TRANSPARENT = 0f
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -66,32 +60,14 @@ fun CardListScreen(component: MainComponent) {
     val screenWidth = configuration.containerSize.width.dp
     val screenHeight = configuration.containerSize.height.dp
 
-    val scope = rememberCoroutineScope()
-    val haptic = LocalHapticFeedback.current
-    var editing by remember { mutableStateOf(false) }
-    var cardTitle by remember { mutableStateOf("") }
-    var cardPan by remember { mutableStateOf("") }
-
-    val preferences = SharedPreferences.INSTANCE
-    val phone = remember { mutableStateOf(preferences.getString("phone") ?: "") }
-
-    val alphaTarget = remember { mutableFloatStateOf(NOT_TRANSPARENT) }
-    val alpha = animateFloatAsState(targetValue = alphaTarget.floatValue, label = "alpha")
-
-    val elevationTarget = remember { mutableStateOf(0.dp) }
-    val elevation = animateDpAsState(targetValue = elevationTarget.value, label = "elevation")
-
-    val newModel = remember {
-        mutableStateOf(
-            CardModel(
-                title = "",
-                availableAmount = "0",
-                tail = ""
-            )
-        )
+    val alphaTarget = derivedStateOf {
+        if (state.isOnNewCard) {
+            SEMITRANSPARENT
+        } else {
+            TRANSPARENT
+        }
     }
-
-    var focusedCardZIndex by remember { mutableFloatStateOf(0f) }
+    val alpha = animateFloatAsState(targetValue = alphaTarget.value, label = "alpha")
 
     Box {
         Box(
@@ -105,7 +81,7 @@ fun CardListScreen(component: MainComponent) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 contentPadding = PaddingValues(vertical = 80.dp)
             ) {
-                items(state.data.size) {
+                items(state.data) { item ->
                     val removeAction = remember { mutableStateOf(false) }
                     Card(
                         colors = CardDefaults.cardColors(),
@@ -117,7 +93,6 @@ fun CardListScreen(component: MainComponent) {
                             .pointerInput(Unit) {
                                 detectTapGestures(
                                     onLongPress = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         removeAction.value = removeAction.value.not()
                                     }
                                 )
@@ -126,18 +101,8 @@ fun CardListScreen(component: MainComponent) {
                     ) {
                         val loading = remember { mutableStateOf(false) }
                         Box {
-                            CardContent(state.data[it], refreshEnabled = loading) {
-                                scope.launch {
-                                    loading.value = true
-                                    component.getBalance(it)
-                                    try {
-//                                        repository.getBalance(phone.value, it)
-                                    } catch (e: Exception) {
-
-                                    } finally {
-                                        loading.value = false
-                                    }
-                                }
+                            CardContent(item, refreshEnabled = loading) {
+                                component.getBalance(it)
                             }
                             this@Card.AnimatedVisibility(
                                 modifier = Modifier.align(Alignment.TopEnd),
@@ -155,8 +120,7 @@ fun CardListScreen(component: MainComponent) {
                                         .align(Alignment.TopEnd)
                                         .clip(CircleShape)
                                         .clickable {
-                                            component.removeCard()
-//                                            repository.removeCard(state[it])
+                                            component.removeCard(item)
                                         }
                                 ) {
                                     Icon(
@@ -167,7 +131,7 @@ fun CardListScreen(component: MainComponent) {
                                 }
                             }
 
-                            if (loading.value) {
+                            if (item.status == MainComponent.Status.LOADING) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.align(Alignment.Center),
                                     strokeCap = StrokeCap.Round,
@@ -179,6 +143,19 @@ fun CardListScreen(component: MainComponent) {
                 }
             }
 
+            if (state.data.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Нет сохранённых карт".lowercase(),
+                        fontSize = 25.sp,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+            }
+
             InputField(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -186,10 +163,9 @@ fun CardListScreen(component: MainComponent) {
                     .padding(top = 16.dp)
                     .advancedShadow(cornersRadius = 16.dp),
                 type = InputFieldType.PHONE,
-                state = phone.value
+                state = state.phoneState
             ) {
-                phone.value = it
-                preferences.putString("phone", it)
+                component.setPhoneInput(it)
             }
 
             TextButton(
@@ -204,8 +180,7 @@ fun CardListScreen(component: MainComponent) {
                 colors = ButtonDefaults.textButtonColors(containerColor = Color(0xFF138DFF)),
                 border = BorderStroke(2.dp, Color.Black),
                 onClick = {
-                    editing = true
-                    alphaTarget.floatValue = SEMITRANSPARENT
+                    component.goToNewCard(true)
                 }
             ) {
                 Text(text = "Добавить карту".lowercase(), fontSize = 25.sp, color = Color.White)
@@ -221,7 +196,7 @@ fun CardListScreen(component: MainComponent) {
         AnimatedVisibility(
             modifier = Modifier
                 .align(Alignment.Center).fillMaxWidth(CARD_WIDTH),
-            visible = editing,
+            visible = state.isOnNewCard,
             enter = slideInVertically() + fadeIn(),
             exit = slideOutVertically() + fadeOut()
         ) {
@@ -247,22 +222,20 @@ fun CardListScreen(component: MainComponent) {
                             Text(text = "Название карты".lowercase())
                             InputField(
                                 modifier = Modifier.advancedShadow(cornersRadius = 16.dp),
-                                state = cardTitle,
+                                state = state.newCardState.label,
                                 type = InputFieldType.TEXT
                             ) {
-                                cardTitle = it
-                                newModel.value = newModel.value.copy(title = it)
+                                component.setNewCardState(state.newCardState.copy(label = it))
                             }
                         }
                         Column {
                             Text(text = "4 цифры карты".lowercase())
                             InputField(
                                 modifier = Modifier.advancedShadow(cornersRadius = 16.dp),
-                                state = cardPan,
+                                state = state.newCardState.tail,
                                 type = InputFieldType.NUMBER
                             ) {
-                                cardPan = it
-                                newModel.value = newModel.value.copy(tail = it)
+                                component.setNewCardState(state.newCardState.copy(tail = it))
                             }
                         }
                     }
@@ -279,12 +252,8 @@ fun CardListScreen(component: MainComponent) {
                     colors = ButtonDefaults.textButtonColors(containerColor = Color(0xFF138DFF)),
                     border = BorderStroke(2.dp, Color.Black),
                     onClick = {
-                        if (newModel.value.title.isNotEmpty() && newModel.value.tail.length == 4) {
-                            component.addNewCard()
+                        component.addNewCard()
 //                            repository.addCard(newModel.value)
-                            editing = false
-                            alphaTarget.floatValue = NOT_TRANSPARENT
-                        }
                     }
                 ) {
                     Text(text = "Добавить".lowercase(), fontSize = 25.sp, color = Color.White)
@@ -300,8 +269,7 @@ fun CardListScreen(component: MainComponent) {
                     colors = ButtonDefaults.textButtonColors(containerColor = Color(0xFF138DFF)),
                     border = BorderStroke(2.dp, Color.Black),
                     onClick = {
-                        editing = false
-                        alphaTarget.floatValue = NOT_TRANSPARENT
+                        component.goToNewCard(false)
                     }
                 ) {
                     Text(text = "Отмена".lowercase(), fontSize = 25.sp, color = Color.White)

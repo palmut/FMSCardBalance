@@ -24,6 +24,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.palmut.fmscardbalance.data.response.DataResponse
 import net.palmut.fmscardbalance.data.response.Response
+import net.palmut.fmscardbalance.store.entity.CardModel
 import kotlin.random.Random
 
 interface BalanceRepository {
@@ -34,9 +35,13 @@ interface BalanceRepository {
     val addCard: (cardModel: CardModel) -> Unit
 
     val removeCard: (cardModel: CardModel) -> Unit
+
+    val getCards: () -> List<CardModel>
+
+    var phone: String
 }
 
-class DefaultBalanceRepository(
+internal class DefaultBalanceRepository(
     private val preferences: SharedPreferences = SharedPreferences.INSTANCE
 ) : BalanceRepository {
 
@@ -154,27 +159,17 @@ class DefaultBalanceRepository(
     }
 
 
-    private val getCards: () -> List<CardModel> = {
+    override val getCards: () -> List<CardModel> = {
         val phone = preferences.getString("phone") ?: ""
         val balanceListString = preferences.getString(phone) ?: "[]"
         Json.decodeFromString<List<CardModel>>(balanceListString)
     }
-}
 
-@OptIn(ExperimentalSerializationApi::class)
-@Serializable
-data class CardModel(
-    @SerialName("title") val title: String,
-    @SerialName("availableAmount") val availableAmount: String,
-    @SerialName("tail") val tail: String = "****",
-) {
-    @SerialName("id")
-    var id: Int = Random.nextInt(0, 1000)
-
-    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
-    @SerialName("date")
-    val date: String
-        get() = getDate()
+    override var phone: String
+        get() = preferences.getString("phone") ?: ""
+        set(value) {
+            preferences.putString("phone", value)
+        }
 }
 
 fun DataResponse.map(title: String) = CardModel(
@@ -200,4 +195,9 @@ class PreviewBalanceRepository : BalanceRepository {
 
     override val removeCard: (cardModel: CardModel) -> Unit
         get() = TODO("Not yet implemented")
+
+    override val getCards: () -> List<CardModel>
+        get() = TODO("Not yet implemented")
+
+    override var phone: String = ""
 }

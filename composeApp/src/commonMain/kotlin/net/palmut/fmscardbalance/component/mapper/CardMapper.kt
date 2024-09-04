@@ -7,7 +7,8 @@ fun Card.map() =
     CardModel(
         title = title,
         availableAmount = availableAmount,
-        tail = tail,
-        id = id,
-        date = date
-    )
+        tail = tail
+    ).also {
+        it.id = id
+        it.date = date
+    }
