@@ -71,6 +71,8 @@ const val CARD_WIDTH = 0.8f
 const val SEMITRANSPARENT = 0.9f
 const val TRANSPARENT = 0f
 
+//todo сделать отступы по вертикали для андроида
+
 @Composable
 fun CardListScreen(component: MainComponent) {
     val state by component.model.subscribeAsState()

@@ -198,19 +198,21 @@ class PreviewBalanceRepository : BalanceRepository {
     )
 
     override suspend fun getBalance(phone: String, pan: String): Response? {
-        TODO("Not yet implemented")
+        //no action
+        return Response()
     }
 
     override fun addCard(cardModel: CardModel) {
-        TODO("Not yet implemented")
+        //no action
     }
 
     override fun removeCard(cardModel: CardModel) {
-        TODO("Not yet implemented")
+        //no action
     }
 
     override fun getCards(): List<CardModel> {
-        TODO("Not yet implemented")
+        //no action
+        return emptyList()
     }
 
     override var phone: String = ""
