@@ -6,7 +6,7 @@ import androidx.compose.ui.graphics.Color
 
 @Composable
 fun AppTheme(
-    content: @Composable() () -> Unit
+    content: @Composable () -> Unit
 ) {
     MaterialTheme(
         colorScheme = MaterialTheme.colorScheme.copy(

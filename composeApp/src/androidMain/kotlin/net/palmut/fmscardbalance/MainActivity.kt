@@ -31,7 +31,7 @@ class MainActivity : ComponentActivity() {
                     MaterialTheme.colorScheme.primary.toArgb()
                 )
             )
-//            App()
+
             AppTheme {
                 CardListScreen()
             }

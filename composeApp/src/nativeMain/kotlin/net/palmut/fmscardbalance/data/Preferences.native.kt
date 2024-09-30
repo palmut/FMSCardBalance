@@ -1,4 +1,4 @@
-package data
+package net.palmut.fmscardbalance.data
 
 import platform.Foundation.NSUserDefaults
 
@@ -8,7 +8,7 @@ actual class SharedPreferences {
     }
 
     actual fun getString(key: String): String? {
-        return NSTUserDefaults.standardUserDefaults.stringForKey(key)
+        return NSUserDefaults.standardUserDefaults.stringForKey(key)
     }
 
     actual companion object {

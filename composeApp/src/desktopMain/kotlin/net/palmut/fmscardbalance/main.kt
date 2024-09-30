@@ -1,8 +1,10 @@
 package net.palmut.fmscardbalance
 
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Tray
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.WindowState
@@ -16,6 +18,18 @@ import net.palmut.fmscardbalance.ui.AppTheme
 import net.palmut.fmscardbalance.ui.MainScreen
 
 fun main() = application {
+    Tray(
+        icon = painterResource("close.png"),
+        tooltip = "tray",
+        onAction = {}
+    ) {
+        Menu("File") {
+            Item("New"){}
+            Item("Save"){}
+            Item("Exit"){}
+        }
+    }
+
     Window(
         resizable = false,
         state = WindowState(

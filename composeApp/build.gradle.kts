@@ -1,6 +1,7 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -11,15 +12,16 @@ plugins {
 }
 
 kotlin {
-    jvm("desktop")
+//    applyDefaultHierarchyTemplate()
 
-    macosX64("native") {
+
+   /* macosX64("native") {
         binaries {
             framework {
                 baseName = "KmpJsonKit"
             }
         }
-    }
+    }*/
 
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
@@ -28,19 +30,23 @@ kotlin {
         }
     }
 
+    jvm("desktop")
+
+    val xcf = XCFramework()
     listOf(
-        iosX64(),
         iosArm64(),
         iosSimulatorArm64()
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
+    ).forEach {
+        it.binaries.framework {
             baseName = "ComposeApp"
             isStatic = true
+//            xcf.add(this)
         }
     }
 
     sourceSets {
         val desktopMain by getting
+
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
@@ -52,7 +58,8 @@ kotlin {
             implementation(libs.kotlin.test.junit)
             implementation(libs.kotlinx.coroutines.test)
         }
-        iosMain.dependencies {
+        nativeMain.dependencies {
+            implementation(compose.components.resources)
             implementation(libs.ktor.client.darwin)
         }
         commonMain.dependencies {
@@ -62,6 +69,7 @@ kotlin {
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
+
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.client.logging)
@@ -69,11 +77,11 @@ kotlin {
             implementation(libs.slf4j.api)
             implementation(libs.slf4j.simple)
 
-            implementation(libs.mvikotlin.core)
-            implementation(libs.mvikotlin.main)
-            implementation(libs.mvikotlin.logging)
-            implementation(libs.mvikotlin.extensions.coroutines)
-            implementation(libs.mvikotlin.timetravel)
+            api(libs.mvikotlin.core)
+            api(libs.mvikotlin.main)
+            api(libs.mvikotlin.logging)
+            api(libs.mvikotlin.extensions.coroutines)
+            api(libs.mvikotlin.timetravel)
             implementation(libs.decompose.decompose)
             implementation(libs.decompose.extensions.compose)
             implementation(libs.essenty.lifecycle.core)
@@ -153,6 +161,7 @@ compose.desktop {
             packageVersion = "1.0.0"
             macOS {
                 iconFile.set(project.file("ic_launcher.icns"))
+                appCategory = "finance"
             }
             outputBaseDir.set(project.layout.projectDirectory.dir("Distr"))
         }

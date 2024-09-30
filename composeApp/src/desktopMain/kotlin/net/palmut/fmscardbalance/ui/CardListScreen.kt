@@ -1,33 +1,63 @@
 package net.palmut.fmscardbalance.ui
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.DraggableState
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.rememberDraggableState
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.NativePaint
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -35,14 +65,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
-import kotlinx.coroutines.CoroutineScope
+import fmscardbalance.composeapp.generated.resources.Res
+import fmscardbalance.composeapp.generated.resources.ic_refresh
+import fmscardbalance.composeapp.generated.resources.round_close_24
 import net.palmut.fmscardbalance.component.MainComponent
 import net.palmut.fmscardbalance.component.entity.Card
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.jetbrains.skia.FilterBlurMode
 import org.jetbrains.skia.MaskFilter
-import java.awt.Component
-import javax.swing.JButton
 
 private const val CARD_ASPECT_RATIO = 1.58f
 const val CARD_WIDTH = 0.8f
@@ -125,7 +156,7 @@ fun CardListScreen(component: MainComponent) {
                                 ) {
                                     Icon(
                                         modifier = Modifier.size(24.dp),
-                                        painter = painterResource("close.png"),
+                                        painter = painterResource(Res.drawable.round_close_24),
                                         contentDescription = ""
                                     )
                                 }
@@ -280,62 +311,6 @@ fun CardListScreen(component: MainComponent) {
 }
 
 @Composable
-fun AnimatedCard(
-    block: @Composable (
-        border: State<Dp>,
-        offsetY: State<Dp>,
-        zIndex: State<Float>,
-        scale: State<Float>,
-        draggableState: DraggableState,
-        onDragStopped: CoroutineScope.(velocity: Float) -> Unit
-    ) -> Unit
-) {
-    val density = LocalDensity.current
-
-    var newOrder: Int = 0
-
-    val zIndex = remember { mutableFloatStateOf(0f) }
-    val scaleTarget = remember { mutableFloatStateOf(1f) }
-    val offsetYTarget = remember { mutableStateOf(0.dp) }
-    val borderTarget = remember { mutableStateOf(3.dp) }
-
-    val scale = animateFloatAsState(targetValue = scaleTarget.value, label = "scale") {
-        if (it == 1f) {
-            newOrder -= 1
-        }
-    }
-
-    val border = animateDpAsState(targetValue = borderTarget.value, label = "elevation") {
-        if (it == 1.dp) {
-
-        }
-    }
-
-    val offsetY = animateDpAsState(targetValue = offsetYTarget.value, label = "offsetY") {
-        if (it == (-150).dp) {
-            zIndex.value -= 1.1f
-            offsetYTarget.value = 0.dp
-
-        }
-    }
-
-    val draggableState = rememberDraggableState {
-        val it = with(density) { it.toDp() }
-        offsetYTarget.value += it
-    }
-
-    val onDragStopped: CoroutineScope.(velocity: Float) -> Unit = {
-        if (offsetYTarget.value < (-100).dp) {
-            offsetYTarget.value = (-150).dp
-        } else {
-            offsetYTarget.value = 0.dp
-        }
-    }
-
-    block(border, offsetY, zIndex, scale, draggableState, onDragStopped)
-}
-
-@Composable
 fun CardContent(
     model: Card,
     refreshEnabled: MutableState<Boolean>,
@@ -372,7 +347,7 @@ fun CardContent(
             ) {
                 Icon(
                     modifier = Modifier.size(24.dp),
-                    painter = painterResource("sync.png"),
+                    painter = painterResource(Res.drawable.ic_refresh),
                     contentDescription = ""
                 )
             }
@@ -456,15 +431,4 @@ fun CardListScreenPreview() {
     AppTheme {
 //        CardListScreen(repository = PreviewBalanceRepository())
     }
-}
-
-fun actionButton(
-    text: String,
-    action: () -> Unit
-): JButton {
-    val button = JButton(text)
-    button.alignmentX = Component.CENTER_ALIGNMENT
-    button.addActionListener { action() }
-
-    return button
 }
