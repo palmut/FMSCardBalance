@@ -87,7 +87,6 @@ fun InputField(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.fillMaxSize()
             ) {
-//                    Text(text = "+7 999 111-22-33".lowercase(), fontSize = 25.sp, color = Color(0xFF138DFF))
                 innerTextField()
             }
         }
@@ -100,7 +99,7 @@ enum class InputFieldType {
 
 
 @Composable
-fun InputFieldPreview() {
+private fun InputFieldPreview() {
     AppTheme {
         InputField(
             state = ""

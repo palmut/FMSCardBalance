@@ -102,7 +102,7 @@ internal class MainStoreProvider(
 
                         data[index] = item.copy(
                             status = MainStore.Status.SUCCESS,
-                            availableAmount = response.data?.balance?.availableAmount.toString()
+                            availableAmount = response?.data?.balance?.availableAmount.toString()
                         )
 
                         dispatch(state.copy(data = data))

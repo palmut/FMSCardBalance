@@ -122,7 +122,7 @@ fun App() {
                             try {
                                 loading.value = true
                                 val repository = DefaultBalanceRepository()
-                                balance.value = repository.getBalance(phone.value, card.value)
+                                balance.value = repository.getBalance(phone.value, card.value)?: Response()
                             } catch (e: Exception) {
                                 balance.value = Response(
                                     status = "CONNECTION",

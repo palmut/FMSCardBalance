@@ -11,6 +11,7 @@ import io.ktor.client.plugins.logging.SIMPLE
 import io.ktor.client.request.get
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,13 +31,13 @@ import kotlin.random.Random
 interface BalanceRepository {
     val balance: MutableStateFlow<MutableList<CardModel>>
 
-    val getBalance: suspend (phone: String, pan: String) -> Response
+    suspend fun getBalance(phone: String, pan: String): Response?
 
-    val addCard: (cardModel: CardModel) -> Unit
+    fun addCard(cardModel: CardModel)
 
-    val removeCard: (cardModel: CardModel) -> Unit
+    fun removeCard(cardModel: CardModel)
 
-    val getCards: () -> List<CardModel>
+    fun getCards(): List<CardModel>
 
     var phone: String
 }
@@ -49,7 +50,7 @@ internal class DefaultBalanceRepository(
         defaultRequest {
             url {
                 protocol = URLProtocol.HTTPS
-                host = "meal.gift-cards.ru/api/1/virtual-cards"
+                host = "meal.gift-cards.ru"
             }
             contentType(ContentType.Application.Json)
         }
@@ -101,39 +102,49 @@ internal class DefaultBalanceRepository(
         }
     }
 
-    override val getBalance: suspend (phone: String, pan: String) -> Response = { phone, pan ->
-        withContext(Dispatchers.IO) {
-            val url = "/$phone/$pan".encodeURLPath()
-            val response = client.get(url).body<Response>()
+    override suspend fun getBalance(phone: String, pan: String): Response? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val url = "/api/1/virtual-cards/$phone/$pan".encodeURLPath()
 
-            response.data?.let { data ->
-                this@DefaultBalanceRepository.balance.value.let {
-                    var cardModel = it.find { it.tail == data.maskedPan?.takeLast(4) }!!
-                    cardModel = data.map(cardModel.title)
+                val response = client.get(url)
 
-                    val savedBalance = preferences.getString(phone)?.let {
-                        Json.decodeFromString<List<CardModel>>(it).toMutableList()
-                    } ?: mutableListOf()
+                if (response.status == HttpStatusCode.OK) {
+                    response.body<Response>().data?.let { data ->
+                        this@DefaultBalanceRepository.balance.value.let {
+                            var cardModel = it.find { it.tail == data.maskedPan?.takeLast(4) }!!
+                            cardModel = data.map(cardModel.title)
 
-                    savedBalance.forEachIndexed { index, item ->
-                        item.takeIf { it.tail == cardModel.tail }?.let {
-                            savedBalance[index] =
-                                it.copy(availableAmount = cardModel.availableAmount)
+                            val savedBalance = preferences.getString(phone)?.let {
+                                Json.decodeFromString<List<CardModel>>(it).toMutableList()
+                            } ?: mutableListOf()
+
+                            savedBalance.forEachIndexed { index, item ->
+                                item.takeIf { it.tail == cardModel.tail }?.let {
+                                    savedBalance[index] =
+                                        it.copy(availableAmount = cardModel.availableAmount)
+                                }
+                            }
+
+                            preferences.putString(phone, Json.encodeToString(savedBalance))
+
+                            this@DefaultBalanceRepository.balance.update { models ->
+                                savedBalance
+                            }
                         }
                     }
 
-                    preferences.putString(phone, Json.encodeToString(savedBalance))
-
-                    this@DefaultBalanceRepository.balance.update { models ->
-                        savedBalance
-                    }
+                    response.body<Response>()
+                } else {
+                    null
                 }
+            } catch (_: IOException) {
+                return@withContext null
             }
-            response
         }
     }
 
-    override val addCard: (cardModel: CardModel) -> Unit = { cardModel ->
+    override fun addCard(cardModel: CardModel) {
         val phone = preferences.getString("phone") ?: ""
         val cards = getCards().toMutableList()
 
@@ -145,7 +156,7 @@ internal class DefaultBalanceRepository(
         balance.update { cards }
     }
 
-    override val removeCard: (cardModel: CardModel) -> Unit = { cardModel ->
+    override fun removeCard(cardModel: CardModel) {
         val phone = preferences.getString("phone") ?: ""
         val cards = getCards().toMutableList()
 
@@ -159,10 +170,10 @@ internal class DefaultBalanceRepository(
     }
 
 
-    override val getCards: () -> List<CardModel> = {
+    override fun getCards(): List<CardModel> {
         val phone = preferences.getString("phone") ?: ""
         val balanceListString = preferences.getString(phone) ?: "[]"
-        Json.decodeFromString<List<CardModel>>(balanceListString)
+        return Json.decodeFromString<List<CardModel>>(balanceListString)
     }
 
     override var phone: String
@@ -186,18 +197,21 @@ class PreviewBalanceRepository : BalanceRepository {
         )
     )
 
-    override val getBalance: suspend (phone: String, pan: String) -> Response
-        get() = TODO("Not yet implemented")
+    override suspend fun getBalance(phone: String, pan: String): Response? {
+        TODO("Not yet implemented")
+    }
 
-    override val addCard: (cardModel: CardModel) -> Unit
-        get() = TODO("Not yet implemented")
+    override fun addCard(cardModel: CardModel) {
+        TODO("Not yet implemented")
+    }
 
+    override fun removeCard(cardModel: CardModel) {
+        TODO("Not yet implemented")
+    }
 
-    override val removeCard: (cardModel: CardModel) -> Unit
-        get() = TODO("Not yet implemented")
-
-    override val getCards: () -> List<CardModel>
-        get() = TODO("Not yet implemented")
+    override fun getCards(): List<CardModel> {
+        TODO("Not yet implemented")
+    }
 
     override var phone: String = ""
 }

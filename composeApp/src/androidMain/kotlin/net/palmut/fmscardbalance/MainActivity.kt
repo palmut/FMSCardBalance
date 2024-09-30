@@ -10,15 +10,26 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
+import com.arkivanov.decompose.defaultComponentContext
+import com.arkivanov.mvikotlin.logging.store.LoggingStoreFactory
+import com.arkivanov.mvikotlin.timetravel.store.TimeTravelStoreFactory
+import net.palmut.fmscardbalance.component.DefaultApplicationComponent
 import net.palmut.fmscardbalance.data.SharedPreferences
 import net.palmut.fmscardbalance.ui.AppTheme
-import net.palmut.fmscardbalance.ui.CardListScreen
+import net.palmut.fmscardbalance.ui.MainScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         SharedPreferences.create(this.applicationContext)
+
+        val applicationComponent = DefaultApplicationComponent(
+            componentContext = DefaultRootComponentContext(
+                componentContext = defaultComponentContext(),
+                storeFactory = LoggingStoreFactory(TimeTravelStoreFactory())
+            )
+        )
 
         setContent {
             enableEdgeToEdge(
@@ -33,7 +44,7 @@ class MainActivity : ComponentActivity() {
             )
 
             AppTheme {
-                CardListScreen()
+                MainScreen(applicationComponent)
             }
         }
     }
