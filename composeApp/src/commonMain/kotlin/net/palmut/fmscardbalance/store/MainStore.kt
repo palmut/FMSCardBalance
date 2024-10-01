@@ -39,6 +39,8 @@ interface MainStore : Store<MainStore.Intent, MainStore.State, Unit> {
     }
 }
 
+//todo сделать обработку ошибок от бека и отображение их на UI
+
 internal class MainStoreProvider(
     private val storeFactory: StoreFactory,
     private val repository: BalanceRepository
