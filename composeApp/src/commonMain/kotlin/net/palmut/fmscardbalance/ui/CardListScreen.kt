@@ -50,7 +50,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -76,6 +78,7 @@ const val TRANSPARENT = 0f
 @Composable
 fun CardListScreen(component: MainComponent) {
     val state by component.model.subscribeAsState()
+    val hapticFeedback = LocalHapticFeedback.current
 
     val alphaTarget = derivedStateOf {
         if (state.isOnNewCard) {
@@ -111,6 +114,7 @@ fun CardListScreen(component: MainComponent) {
                             .pointerInput(Unit) {
                                 detectTapGestures(
                                     onLongPress = {
+                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                                         removeAction.value = removeAction.value.not()
                                     }
                                 )
