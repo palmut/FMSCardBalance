@@ -69,7 +69,8 @@ fun InputField(
         textStyle = TextStyle(
             color = MaterialTheme.colorScheme.tertiary,
             fontSize = 25.sp,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            fontFamily = AppFont
         ),
         value = state,
         onValueChange = onInput,

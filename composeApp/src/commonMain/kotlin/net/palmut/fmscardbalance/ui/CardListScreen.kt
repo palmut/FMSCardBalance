@@ -15,15 +15,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -52,6 +55,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -73,12 +77,11 @@ const val CARD_WIDTH = 0.8f
 const val SEMITRANSPARENT = 0.9f
 const val TRANSPARENT = 0f
 
-//todo сделать отступы по вертикали для андроида
-
 @Composable
 fun CardListScreen(component: MainComponent) {
     val state by component.model.subscribeAsState()
     val hapticFeedback = LocalHapticFeedback.current
+    val density = LocalDensity.current
 
     val alphaTarget = derivedStateOf {
         if (state.isOnNewCard) {
@@ -89,18 +92,29 @@ fun CardListScreen(component: MainComponent) {
     }
     val alpha = animateFloatAsState(targetValue = alphaTarget.value, label = "alpha")
 
+    val controlAndPaddingSize = 48.dp.plus(32.dp)
+
+    val statusBarHeight = WindowInsets.statusBars.getTop(density)
+        .let {
+            with(density) { it.toDp() }.plus(controlAndPaddingSize)
+        }
+    val navBarHeight = WindowInsets.navigationBars.getBottom(density)
+        .let {
+            with(density) { it.toDp() }.plus(controlAndPaddingSize)
+        }
+
     Box {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFFFFFF9)),
         ) {
             LazyColumn(
-                modifier = Modifier.fillMaxHeight()
+                modifier = Modifier
+                    .fillMaxHeight()
                     .align(Alignment.Center),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                contentPadding = PaddingValues(vertical = 80.dp)
+                contentPadding = PaddingValues(top = statusBarHeight, bottom = navBarHeight)
             ) {
                 items(state.data) { item ->
                     val removeAction = remember { mutableStateOf(false) }
@@ -269,7 +283,7 @@ fun CardListScreen(component: MainComponent) {
                         .padding(bottom = 16.dp)
                         .advancedShadow(cornersRadius = 16.dp)
                         .height(48.dp)
-                        .fillMaxWidth(CARD_WIDTH)
+                        .fillMaxWidth()
                         .zIndex(-5f),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.textButtonColors(containerColor = Color(0xFF138DFF)),
@@ -285,7 +299,7 @@ fun CardListScreen(component: MainComponent) {
                     modifier = Modifier
                         .advancedShadow(cornersRadius = 16.dp)
                         .height(48.dp)
-                        .fillMaxWidth(CARD_WIDTH)
+                        .fillMaxWidth()
                         .zIndex(-5f),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.textButtonColors(containerColor = Color(0xFF138DFF)),

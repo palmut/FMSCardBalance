@@ -18,18 +18,6 @@ import net.palmut.fmscardbalance.ui.AppTheme
 import net.palmut.fmscardbalance.ui.MainScreen
 
 fun main() = application {
-    Tray(
-        icon = painterResource("close.png"),
-        tooltip = "tray",
-        onAction = {}
-    ) {
-        Menu("File") {
-            Item("New"){}
-            Item("Save"){}
-            Item("Exit"){}
-        }
-    }
-
     Window(
         resizable = false,
         state = WindowState(
@@ -49,7 +37,7 @@ fun main() = application {
         )
 
         AppTheme {
-            MainScreen(applicationComponent)
+            MainScreen(component = applicationComponent)
         }
     }
 }

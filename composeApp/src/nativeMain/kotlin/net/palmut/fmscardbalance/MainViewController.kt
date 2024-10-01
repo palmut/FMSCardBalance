@@ -19,6 +19,6 @@ fun MainViewController() = ComposeUIViewController {
     )
 
     AppTheme {
-        MainScreen(applicationComponent)
+        MainScreen(component = applicationComponent)
     }
 }

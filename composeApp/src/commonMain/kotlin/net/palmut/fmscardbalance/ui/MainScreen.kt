@@ -2,10 +2,12 @@
 
 package net.palmut.fmscardbalance.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import com.arkivanov.decompose.ExperimentalDecomposeApi
 import com.arkivanov.decompose.extensions.compose.stack.Children
 import com.arkivanov.decompose.extensions.compose.stack.animation.fade
@@ -20,6 +22,7 @@ import net.palmut.fmscardbalance.component.ApplicationComponent
 fun MainScreen(component: ApplicationComponent) {
     Box(
         modifier = Modifier
+            .background(Color(0xFFFFFFF9))
             .fillMaxSize()
     ) {
         Children(

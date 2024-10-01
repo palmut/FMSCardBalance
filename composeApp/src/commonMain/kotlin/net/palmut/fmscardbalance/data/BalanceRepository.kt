@@ -29,8 +29,6 @@ import net.palmut.fmscardbalance.store.entity.CardModel
 import kotlin.random.Random
 
 interface BalanceRepository {
-    val balance: MutableStateFlow<MutableList<CardModel>>
-
     suspend fun getBalance(phone: String, pan: String): Response?
 
     fun addCard(cardModel: CardModel)
@@ -41,6 +39,8 @@ interface BalanceRepository {
 
     var phone: String
 }
+
+private const val PHONE_KEY = "phone"
 
 internal class DefaultBalanceRepository(
     private val preferences: SharedPreferences = SharedPreferences.INSTANCE
@@ -72,36 +72,6 @@ internal class DefaultBalanceRepository(
         }
     }
 
-    override val balance = MutableStateFlow(mutableListOf<CardModel>())
-
-    init {
-        val phone = preferences.getString("phone") ?: ""
-        val balanceListString = preferences.getString(phone) ?: "[]"
-        val balanceList = Json.decodeFromString<List<CardModel>>(balanceListString)
-
-        balance.update {
-            balanceList.toMutableList()
-        }
-
-        if (balanceList.isEmpty() && false) {
-            val tempBalanceList = listOf(
-                CardModel(
-                    title = "Спорт", availableAmount = "0", tail = "0356"
-                ),
-                CardModel(
-                    title = "Еда", availableAmount = "0", tail = "6665"
-                ),
-                CardModel(title = "Проезд", availableAmount = "0", tail = "7491")
-            )
-            val tempBalanceListString = Json.encodeToString(tempBalanceList)
-            preferences.putString(phone, tempBalanceListString)
-
-            balance.update {
-                tempBalanceList.toMutableList()
-            }
-        }
-    }
-
     override suspend fun getBalance(phone: String, pan: String): Response? {
         return withContext(Dispatchers.IO) {
             try {
@@ -110,8 +80,8 @@ internal class DefaultBalanceRepository(
                 val response = client.get(url)
 
                 if (response.status == HttpStatusCode.OK) {
-                    response.body<Response>().data?.let { data ->
-                        this@DefaultBalanceRepository.balance.value.let {
+                    response.body<Response>().data?.also { data ->
+                        getCards().let {
                             var cardModel = it.find { it.tail == data.maskedPan?.takeLast(4) }!!
                             cardModel = data.map(cardModel.title)
 
@@ -127,10 +97,6 @@ internal class DefaultBalanceRepository(
                             }
 
                             preferences.putString(phone, Json.encodeToString(savedBalance))
-
-                            this@DefaultBalanceRepository.balance.update { models ->
-                                savedBalance
-                            }
                         }
                     }
 
@@ -145,19 +111,17 @@ internal class DefaultBalanceRepository(
     }
 
     override fun addCard(cardModel: CardModel) {
-        val phone = preferences.getString("phone") ?: ""
+        val phone = preferences.getString(PHONE_KEY) ?: ""
         val cards = getCards().toMutableList()
 
         cards.add(cardModel)
 
         val tempBalanceListString = Json.encodeToString(cards)
         preferences.putString(phone, tempBalanceListString)
-
-        balance.update { cards }
     }
 
     override fun removeCard(cardModel: CardModel) {
-        val phone = preferences.getString("phone") ?: ""
+        val phone = preferences.getString(PHONE_KEY) ?: ""
         val cards = getCards().toMutableList()
 
         val index = cards.indexOfFirst { it.tail == cardModel.tail }
@@ -165,21 +129,19 @@ internal class DefaultBalanceRepository(
 
         val tempBalanceListString = Json.encodeToString(cards)
         preferences.putString(phone, tempBalanceListString)
-
-        balance.update { cards }
     }
 
 
     override fun getCards(): List<CardModel> {
-        val phone = preferences.getString("phone") ?: ""
+        val phone = preferences.getString(PHONE_KEY) ?: ""
         val balanceListString = preferences.getString(phone) ?: "[]"
         return Json.decodeFromString<List<CardModel>>(balanceListString)
     }
 
     override var phone: String
-        get() = preferences.getString("phone") ?: ""
+        get() = preferences.getString(PHONE_KEY) ?: ""
         set(value) {
-            preferences.putString("phone", value)
+            preferences.putString(PHONE_KEY, value)
         }
 }
 
@@ -188,32 +150,3 @@ fun DataResponse.map(title: String) = CardModel(
     availableAmount = balance?.availableAmount?.toString() ?: "",
     tail = maskedPan?.takeLast(4) ?: ""
 )
-
-class PreviewBalanceRepository : BalanceRepository {
-    override val balance = MutableStateFlow(
-        mutableListOf(
-            CardModel(title = "Спорт", availableAmount = "1000"),
-            CardModel(title = "Спорт", availableAmount = "1000")
-        )
-    )
-
-    override suspend fun getBalance(phone: String, pan: String): Response? {
-        //no action
-        return Response()
-    }
-
-    override fun addCard(cardModel: CardModel) {
-        //no action
-    }
-
-    override fun removeCard(cardModel: CardModel) {
-        //no action
-    }
-
-    override fun getCards(): List<CardModel> {
-        //no action
-        return emptyList()
-    }
-
-    override var phone: String = ""
-}
